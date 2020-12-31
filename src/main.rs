@@ -5,11 +5,13 @@ mod saucefile;
 mod shell;
 
 use crate::commands::new::NewCommand;
+use crate::commands::r#as::AsCommand;
 use crate::commands::set::SetCommand;
 use crate::commands::shell::ShellCommand;
 use crate::context::Context;
 use crate::shell::Shell;
 use anyhow::Result;
+use output::Output;
 use std::io::Write;
 
 use clap::Clap;
@@ -35,6 +37,7 @@ enum SubCommand {
     New(NewCommand),
     Set(SetCommand),
     Shell(ShellCommand),
+    As(AsCommand),
     Edit,
     Show,
     Clear,
@@ -45,22 +48,24 @@ fn main() -> Result<()> {
     let mut handle = stderr.lock();
 
     let opts: Options = Options::try_parse().unwrap_or_else(|e| {
-        let message = format!("wat {}", e);
+        let message = format!("{}", e);
         handle.write_all(message.as_ref()).unwrap();
         handle.flush().unwrap();
         std::process::exit(1)
     });
 
     let context = Context::new()?;
+    let mut output = Output::default();
 
-    let output = match opts.subcmd {
-        Some(SubCommand::New(cmd)) => crate::commands::new::new(context, cmd)?,
-        Some(SubCommand::Set(cmd)) => crate::commands::set::set(context, cmd)?,
-        Some(SubCommand::Shell(cmd)) => crate::commands::shell::run(context, cmd),
-        Some(SubCommand::Edit) => Shell::new(context).edit(),
-        Some(SubCommand::Show) => Shell::new(context).show(),
-        Some(SubCommand::Clear) => Shell::new(context).clear(),
-        None => Shell::new(context).execute(),
+    match opts.subcmd {
+        Some(SubCommand::New(cmd)) => crate::commands::new::new(context, cmd, &mut output),
+        Some(SubCommand::Set(cmd)) => crate::commands::set::set(context, cmd, &mut output),
+        Some(SubCommand::Shell(cmd)) => crate::commands::shell::run(context, cmd, &mut output),
+        Some(SubCommand::Edit) => Shell::new(context).edit(&mut output),
+        Some(SubCommand::Show) => Shell::new(context).show(&mut output),
+        Some(SubCommand::Clear) => Shell::new(context).clear(&mut output),
+        Some(SubCommand::As(cmd)) => crate::commands::r#as::r#as(context, cmd, &mut output),
+        None => Shell::new(context).execute(&mut output, None),
     };
 
     let out = std::io::stderr();

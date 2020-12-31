@@ -1,6 +1,5 @@
 use crate::context::Context;
 use crate::output::Output;
-use anyhow::Result;
 use clap::Clap;
 
 /// Creates a sauce file
@@ -11,17 +10,26 @@ pub struct NewCommand {
     debug: bool,
 }
 
-pub fn new(context: Context, _cmd: NewCommand) -> Result<Output> {
+pub fn new(context: Context, _cmd: NewCommand, output: &mut Output) {
     let parent = context.sauce_path.parent().unwrap();
-    std::fs::create_dir_all(parent)?;
+    if std::fs::create_dir_all(parent).is_err() {
+        output.push_message(format!(
+            "Couldn't create the thing {}",
+            parent.to_string_lossy()
+        ));
+        return;
+    }
 
     if context.sauce_path.is_file() {
-        Ok(Output::from_message(format!(
+        output.push_message(format!(
             "File already exists at {}",
             context.sauce_path.to_string_lossy()
-        )))
+        ));
     } else {
-        std::fs::File::create(context.sauce_path)?;
-        Ok(Output::from_message(format!("Created")))
+        if std::fs::File::create(context.sauce_path).is_err() {
+            output.push_message("couldn't create the file");
+        } else {
+            output.push_message(format!("Created"));
+        }
     }
 }

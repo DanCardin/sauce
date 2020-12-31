@@ -4,22 +4,32 @@ pub struct Output {
 }
 
 impl Output {
+    #[allow(unused)]
     pub fn from_result(result: String) -> Self {
-        Self::default().with_result(result)
+        let mut output = Self::default();
+        output.with_result(result);
+        output
     }
 
+    #[allow(unused)]
     pub fn from_message(message: String) -> Self {
-        Self::default().with_message(message)
+        let mut output = Self::default();
+        output.with_message(message);
+        output
     }
 
-    pub fn with_result<F: Into<String>>(mut self, result: F) -> Self {
+    pub fn with_result<F: Into<String>>(&mut self, result: F) -> &mut Self {
         self.results.push(result.into());
         self
     }
 
-    pub fn with_message<F: Into<String>>(mut self, message: F) -> Self {
+    pub fn with_message<F: Into<String>>(&mut self, message: F) -> &mut Self {
         self.messages.push(message.into());
         self
+    }
+
+    pub fn push_result<F: Into<String>>(&mut self, result: F) {
+        self.results.push(result.into());
     }
 
     pub fn push_message<F: Into<String>>(&mut self, message: F) {

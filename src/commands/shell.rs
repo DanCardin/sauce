@@ -17,10 +17,10 @@ pub enum ShellKinds {
     Init,
 }
 
-pub fn run(context: Context, cmd: ShellCommand) -> Output {
+pub fn run(context: Context, cmd: ShellCommand, output: &mut Output) {
     let shell = Shell::new(context);
     match cmd.kind {
-        Some(ShellKinds::Init) => shell.init(),
-        None => shell.create_subshell(),
+        Some(ShellKinds::Init) => shell.init(output),
+        None => shell.create_subshell(output),
     }
 }
