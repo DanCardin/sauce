@@ -26,11 +26,8 @@ impl Context {
         let data_dir = strategy.data_dir();
 
         let current_dir = env::current_dir()?;
-        let relative_path = current_dir.strip_prefix(&home)?;
-        if relative_path.to_string_lossy().is_empty() {
-            todo!("Handle relative_path being empty");
-        }
 
+        let relative_path = current_dir.strip_prefix(&home)?;
         let sauce_path = data_dir.join(relative_path).with_extension("toml");
 
         Ok(Self {
