@@ -5,7 +5,6 @@ mod saucefile;
 mod shell;
 
 use crate::commands::new::NewCommand;
-use crate::commands::r#as::AsCommand;
 use crate::commands::set::SetCommand;
 use crate::commands::shell::ShellCommand;
 use crate::context::Context;
@@ -28,6 +27,10 @@ struct Options {
     #[clap(short, long, parse(from_occurrences))]
     verbose: i32,
 
+    /// Runs the given command "as" the given "as" namespace.
+    #[clap(short, long)]
+    r#as: Option<String>,
+
     #[clap(subcommand)]
     subcmd: Option<SubCommand>,
 }
@@ -37,7 +40,6 @@ enum SubCommand {
     New(NewCommand),
     Set(SetCommand),
     Shell(ShellCommand),
-    As(AsCommand),
     Edit,
     Show,
     Clear,
@@ -62,10 +64,9 @@ fn main() -> Result<()> {
         Some(SubCommand::Set(cmd)) => crate::commands::set::set(context, cmd, &mut output),
         Some(SubCommand::Shell(cmd)) => crate::commands::shell::run(context, cmd, &mut output),
         Some(SubCommand::Edit) => Shell::new(context).edit(&mut output),
-        Some(SubCommand::Show) => Shell::new(context).show(&mut output),
+        Some(SubCommand::Show) => Shell::new(context).show(&mut output, opts.r#as.as_deref()),
         Some(SubCommand::Clear) => Shell::new(context).clear(&mut output),
-        Some(SubCommand::As(cmd)) => crate::commands::r#as::r#as(context, cmd, &mut output),
-        None => Shell::new(context).execute(&mut output, None),
+        None => Shell::new(context).execute(&mut output, opts.r#as.as_deref()),
     };
 
     let out = std::io::stderr();

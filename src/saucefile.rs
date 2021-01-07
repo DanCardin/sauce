@@ -95,6 +95,7 @@ impl Saucefile {
 
     fn section(&mut self, section: &str, tag: Option<&str>) -> Vec<(String, String)> {
         let tag = tag.unwrap_or("default");
+
         let mut map = IndexMap::new();
 
         for document in self.documents.iter() {
@@ -102,13 +103,13 @@ impl Saucefile {
                 for (key, item) in vars.iter() {
                     let var = match item {
                         Item::Value(value) => match value {
-                            Value::InlineTable(table) => match table.get(tag) {
+                            Value::InlineTable(table) => match table.get(&tag) {
                                 Some(value) => unwrap_toml_value(value),
                                 _ => "".to_string(),
                             },
                             _ => unwrap_toml_value(value),
                         },
-                        Item::Table(table) => match &table[tag] {
+                        Item::Table(table) => match &table[&tag] {
                             Item::Value(value) => unwrap_toml_value(value),
                             _ => "".to_string(),
                         },

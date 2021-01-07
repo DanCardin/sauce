@@ -6,7 +6,7 @@ pub struct Shell {
     context: Context,
 }
 
-impl Shell {
+impl<'a> Shell {
     pub fn new(context: Context) -> Self {
         Self { context }
     }
@@ -43,15 +43,15 @@ impl Shell {
             .with_message("Cleared your sauce");
     }
 
-    pub fn show(&self, output: &mut Output) {
+    pub fn show(&self, output: &mut Output, tag: Option<&str>) {
         output
             .with_message(self.render_vars(
                 |var, value| format!("export {}={}", var, shell_words::quote(&value.to_string())),
-                None,
+                tag,
             ))
             .with_message(self.render_aliases(
                 |var, value| format!("alias {}={}", var, shell_words::quote(&value.to_string())),
-                None,
+                tag,
             ));
     }
 
