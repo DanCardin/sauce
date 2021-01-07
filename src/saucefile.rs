@@ -1,6 +1,7 @@
 use crate::context::Context;
 use anyhow::Result;
 use indexmap::IndexMap;
+use toml_edit::Table;
 
 use std::fs::OpenOptions;
 use std::io::BufWriter;
@@ -57,7 +58,23 @@ impl Saucefile {
     pub fn set_var(&mut self, key: String, raw_value: String) {
         if let Some(document) = self.documents.last_mut() {
             let toml_value = Value::from_str(&raw_value).unwrap_or_else(|_| Value::from(raw_value));
+            let env_section = document.as_table_mut().entry("environment");
+            if env_section.is_none() {
+                *env_section = Item::Table(Table::new());
+            }
             document["environment"][&key] = value(toml_value);
+        }
+    }
+
+    pub fn set_alias(&mut self, key: String, raw_value: String) {
+        if let Some(document) = self.documents.last_mut() {
+            let toml_value = Value::from_str(&raw_value).unwrap_or_else(|_| Value::from(raw_value));
+
+            let alias_section = document.as_table_mut().entry("alias");
+            if alias_section.is_none() {
+                *alias_section = Item::Table(Table::new());
+            }
+            document["alias"][&key] = value(toml_value);
         }
     }
 
@@ -76,12 +93,12 @@ impl Saucefile {
         Ok(())
     }
 
-    pub fn vars(&mut self, tag: Option<&str>) -> Vec<(String, String)> {
+    fn section(&mut self, section: &str, tag: Option<&str>) -> Vec<(String, String)> {
         let tag = tag.unwrap_or("default");
         let mut map = IndexMap::new();
 
         for document in self.documents.iter() {
-            if let Some(vars) = document["environment"].as_table() {
+            if let Some(vars) = document[section].as_table() {
                 for (key, item) in vars.iter() {
                     let var = match item {
                         Item::Value(value) => match value {
@@ -102,6 +119,14 @@ impl Saucefile {
             }
         }
         map.into_iter().collect()
+    }
+
+    pub fn vars(&mut self, tag: Option<&str>) -> Vec<(String, String)> {
+        self.section("environment", tag)
+    }
+
+    pub fn aliases(&mut self, tag: Option<&str>) -> Vec<(String, String)> {
+        self.section("alias", tag)
     }
 }
 
