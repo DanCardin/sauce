@@ -17,7 +17,7 @@ use clap::Clap;
 
 /// Sauce!
 #[derive(Clap, Debug)]
-#[clap(version = "0.1.0", author = "Dan C. <ddcardin@gmail.com>")]
+#[clap(version, author)]
 struct Options {
     /// Sets a custom config file. Could have been an Option<T> with no default too
     #[clap(short, long)]
