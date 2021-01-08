@@ -311,7 +311,7 @@ dependencies = [
  "etcetera",
  "indexmap",
  "serde",
- "shell-words",
+ "snailquote",
  "toml",
  "toml_edit",
 ]
@@ -337,10 +337,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "shell-words"
-version = "1.0.0"
+name = "snailquote"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6fa3938c99da4914afedd13bf3d79bcb6c277d1b2c398d23257a304d9e1b074"
+checksum = "f34b729d802f52194598858ac852c3fb3b33f6e026cd03195072ccb7bf3fc810"
+dependencies = [
+ "thiserror",
+ "unicode_categories",
+]
 
 [[package]]
 name = "strsim"
@@ -445,6 +449,12 @@ name = "unicode-xid"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
+
+[[package]]
+name = "unicode_categories"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39ec24b3121d976906ece63c9daad25b85969647682eee313cb5779fdd69e14e"
 
 [[package]]
 name = "unreachable"

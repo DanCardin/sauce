@@ -46,11 +46,11 @@ impl<'a> Shell {
     pub fn show(&self, output: &mut Output, tag: Option<&str>) {
         output
             .with_message(self.render_vars(
-                |var, value| format!("export {}={}", var, shell_words::quote(&value.to_string())),
+                |var, value| format!("export {}={}", var, snailquote::escape(&value.to_string())),
                 tag,
             ))
             .with_message(self.render_aliases(
-                |var, value| format!("alias {}={}", var, shell_words::quote(&value.to_string())),
+                |var, value| format!("alias {}={}", var, snailquote::escape(&value.to_string())),
                 tag,
             ));
     }
@@ -58,11 +58,11 @@ impl<'a> Shell {
     pub fn execute(&self, output: &mut Output, tag: Option<&str>) {
         output
             .with_result(self.render_vars(
-                |var, value| format!("export {}={}", var, shell_words::quote(&value.to_string())),
+                |var, value| format!("export {}={}", var, snailquote::escape(&value.to_string())),
                 tag,
             ))
             .with_result(self.render_aliases(
-                |var, value| format!("alias {}={}", var, shell_words::quote(&value.to_string())),
+                |var, value| format!("alias {}={}", var, snailquote::escape(&value.to_string())),
                 tag,
             ))
             .with_message(format!(
