@@ -113,6 +113,8 @@ other unnamespaced values.
 ## Planned Features
 
 - more targets (in order): aliases, functions, arbitrary key-value pairs
+- automatically escape var values when set by `sauce set var`
+- accept value by stdin through `sauce set var`
 - “strategies” (nested shell vs in-place alterations of the current
   shell)
   - Given strategies, the ability to unset/revert alterations in a more
