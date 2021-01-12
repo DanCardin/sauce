@@ -2,6 +2,10 @@ use crate::context::Context;
 use crate::output::Output;
 use crate::saucefile::Saucefile;
 
+fn escape(value: &str) -> String {
+    snailquote::escape(&value.to_string()).replace("\\n", "\n")
+}
+
 pub struct Shell {
     context: Context,
 }
@@ -27,7 +31,7 @@ impl<'a> Shell {
         let statement = format!(
             r#"
             sauce() {{
-                eval $(command {}{} "$@")
+                eval "$(command {}{} "$@")"
             }}
             "#,
             prefix,
@@ -46,11 +50,11 @@ impl<'a> Shell {
     pub fn show(&self, output: &mut Output, tag: Option<&str>) {
         output
             .with_message(self.render_vars(
-                |var, value| format!("export {}={}", var, snailquote::escape(&value.to_string())),
+                |var, value| format!("export {}={}", var, escape(&value)),
                 tag,
             ))
             .with_message(self.render_aliases(
-                |var, value| format!("alias {}={}", var, snailquote::escape(&value.to_string())),
+                |var, value| format!("alias {}={}", var, escape(&value)),
                 tag,
             ));
     }
@@ -58,11 +62,11 @@ impl<'a> Shell {
     pub fn execute(&self, output: &mut Output, tag: Option<&str>) {
         output
             .with_result(self.render_vars(
-                |var, value| format!("export {}={}", var, snailquote::escape(&value.to_string())),
+                |var, value| format!("export {}={}", var, escape(&value)),
                 tag,
             ))
             .with_result(self.render_aliases(
-                |var, value| format!("alias {}={}", var, snailquote::escape(&value.to_string())),
+                |var, value| format!("alias {}={}", var, escape(&value)),
                 tag,
             ))
             .with_message(format!(

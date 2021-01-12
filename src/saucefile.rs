@@ -55,7 +55,7 @@ impl Saucefile {
         base_sf
     }
 
-    pub fn set_var(&mut self, key: String, raw_value: String) {
+    pub fn set_var(&mut self, key: &str, raw_value: &str) {
         if let Some(document) = self.documents.last_mut() {
             let toml_value = Value::from_str(&raw_value).unwrap_or_else(|_| Value::from(raw_value));
             let env_section = document.as_table_mut().entry("environment");

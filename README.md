@@ -6,8 +6,10 @@
 A tool to help manage context/project specific shell-things like
 environment variables.
 
-Core Goals: \* Store all data centrally, not relative to the directory
-being sauced \* Cascade data from parent directories downwards
+Core Goals:
+
+- Store all data centrally, not relative to the directory being sauced
+- Cascade data from parent directories downwards
 
 ## Example Workflow
 
@@ -42,10 +44,15 @@ foo=bar
 
 A thing which `sauce` can load/unload is called a “target”.
 
-Currently supported targets include: \* environment variables
+Currently supported targets include:
 
-Planned/Ideally supported targets include: \* aliases \* functions \*
-arbitrary kv
+- environment variables
+- aliases
+
+Planned/Ideally supported targets include:
+
+- functions
+- arbitrary kv
 
 ## Features
 
@@ -77,7 +84,7 @@ which the folder structure mirrors that of the folders who’s values are
 being tracked. Given the above example you might see:
 
   ~/.local/share/sauce/
-      projects/
+
           foo/
               subfoo.toml
           foo.toml
@@ -112,9 +119,7 @@ other unnamespaced values.
 
 ## Planned Features
 
-- more targets (in order): aliases, functions, arbitrary key-value pairs
-- automatically escape var values when set by `sauce set var`
-- accept value by stdin through `sauce set var`
+- more targets (in order): functions, arbitrary key-value pairs
 - “strategies” (nested shell vs in-place alterations of the current
   shell)
   - Given strategies, the ability to unset/revert alterations in a more
