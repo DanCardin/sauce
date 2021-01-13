@@ -17,12 +17,20 @@ pub struct SetCommand {
 enum SetKinds {
     Var(SetVarKind),
     Alias(SetVarKind),
+    Function(KeyValuePair),
 }
 
-/// Environment variable type
+/// Key-value pairs, delimited by an "=".
 #[derive(Clap, Debug)]
 struct SetVarKind {
     values: Vec<String>,
+}
+
+/// Key value pair, supplied as individual arguments
+#[derive(Clap, Debug)]
+struct KeyValuePair {
+    key: String,
+    value: String,
 }
 
 fn get_input(mut values: Vec<String>) -> Vec<String> {
@@ -46,6 +54,9 @@ pub fn set(context: Context, cmd: SetCommand, output: &mut Output) {
     match cmd.kind {
         SetKinds::Var(var) => set_var(&context, saucefile, get_input(var.values), output),
         SetKinds::Alias(alias) => set_alias(&context, saucefile, get_input(alias.values), output),
+        SetKinds::Function(KeyValuePair { key, value }) => {
+            set_function(&context, saucefile, key, value, output)
+        }
     }
 }
 
@@ -78,6 +89,20 @@ fn set_alias(
         output.push_message(format!("Set '{}' to {}", var, value));
     }
     if saucefile.write(&context).is_err() {
-        output.push_message("couldn't writ the thing")
+        output.push_message("couldn't write the thing")
+    }
+}
+
+fn set_function(
+    context: &Context,
+    mut saucefile: Saucefile,
+    name: String,
+    body: String,
+    output: &mut Output,
+) {
+    saucefile.set_function(&name, &body);
+    output.push_message(format!("Set '{}' to {}", name, body));
+    if saucefile.write(&context).is_err() {
+        output.push_message("couldn't write the thing")
     }
 }

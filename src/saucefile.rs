@@ -78,6 +78,18 @@ impl Saucefile {
         }
     }
 
+    pub fn set_function(&mut self, name: &str, body: &str) {
+        if let Some(document) = self.documents.last_mut() {
+            let toml_value = Value::from_str(&body).unwrap_or_else(|_| Value::from(body));
+
+            let alias_section = document.as_table_mut().entry("function");
+            if alias_section.is_none() {
+                *alias_section = Item::Table(Table::new());
+            }
+            document["function"][&name] = value(toml_value);
+        }
+    }
+
     pub fn write(&mut self, context: &Context) -> Result<()> {
         let file = OpenOptions::new()
             .write(true)
@@ -128,6 +140,10 @@ impl Saucefile {
 
     pub fn aliases(&mut self, tag: Option<&str>) -> Vec<(String, String)> {
         self.section("alias", tag)
+    }
+
+    pub fn functions(&mut self, tag: Option<&str>) -> Vec<(String, String)> {
+        self.section("function", tag)
     }
 }
 

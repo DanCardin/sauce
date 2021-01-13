@@ -47,7 +47,22 @@ A thing which `sauce` can load/unload is called a “target”.
 Currently supported targets include:
 
 - environment variables
+
+  ``` bash
+  sauce set var FOO=bar
+  ```
+
 - aliases
+
+  ``` bash
+  sauce set alias g=git
+  ```
+
+- functions
+
+  ``` bash
+  sauce set function add 'echo $(expr $1 + $2)'
+  ```
 
 Planned/Ideally supported targets include:
 
@@ -117,9 +132,9 @@ Given `sauce --as prod`, you will get the “prod” namespace
 (i.e. AWS\_PROFILE=projectname-prod) for this value, as well as all
 other unnamespaced values.
 
-## Planned Features
+## Planned Work
 
-- more targets (in order): functions, arbitrary key-value pairs
+- Support `--glob DATABASE_*` and `--filter DATABASE_PASSWORD`.
 - “strategies” (nested shell vs in-place alterations of the current
   shell)
   - Given strategies, the ability to unset/revert alterations in a more
@@ -127,6 +142,8 @@ other unnamespaced values.
     in-place modification strategy which essentially requires that
     `sauce` maintains sole control over all tracked variables (because
     it can/will `unset` them if asked).
+- more targets: arbitrary key-value pairs
+- refactor into thin cli app + library
 - pipe `sauce show` to a pager when beyond a full terminal height
 - colorized output
 - Ability to use shell hooks to automatically perform i.e. `sauce` on

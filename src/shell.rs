@@ -56,7 +56,8 @@ impl<'a> Shell {
             .with_message(self.render_aliases(
                 |var, value| format!("alias {}={}", var, escape(&value)),
                 tag,
-            ));
+            ))
+            .with_message(self.render_functions(tag));
     }
 
     pub fn execute(&self, output: &mut Output, tag: Option<&str>) {
@@ -69,6 +70,7 @@ impl<'a> Shell {
                 |var, value| format!("alias {}={}", var, escape(&value)),
                 tag,
             ))
+            .with_result(self.render_functions(tag))
             .with_message(format!(
                 "Sourced {}",
                 self.context.sauce_path.to_string_lossy()
@@ -98,6 +100,14 @@ impl<'a> Shell {
             .iter()
             .map(|(k, v)| format_row(k, v))
             .map(|v| format!("{};\n", v))
+            .collect()
+    }
+
+    fn render_functions(&self, tag: Option<&str>) -> String {
+        Saucefile::read(&self.context)
+            .functions(tag)
+            .iter()
+            .map(|(k, v)| format!("function {} {{\n  {}\n}};\n", k, v.replace("\n", "\n  ")))
             .collect()
     }
 }
