@@ -14,7 +14,7 @@ keywords = [
     'direnv',
 ]
 categories = ['command-line-utilities']
-license-file = 'LICENSE'
+license = "Apache-2.0"
 
 [dependencies]
 anyhow = '1.0.35'
