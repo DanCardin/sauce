@@ -25,11 +25,9 @@ pub fn new(context: Context, _cmd: NewCommand, output: &mut Output) {
             "File already exists at {}",
             context.sauce_path.to_string_lossy()
         ));
+    } else if std::fs::File::create(context.sauce_path).is_err() {
+        output.push_message("couldn't create the file");
     } else {
-        if std::fs::File::create(context.sauce_path).is_err() {
-            output.push_message("couldn't create the file");
-        } else {
-            output.push_message(format!("Created"));
-        }
+        output.push_message("Created".to_string());
     }
 }

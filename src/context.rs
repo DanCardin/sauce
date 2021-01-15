@@ -43,7 +43,7 @@ impl Context {
         Self::from_path(current_dir)
     }
 
-    pub fn cascade_paths(self: &Self) -> Vec<PathBuf> {
+    pub fn cascade_paths(&self) -> Vec<PathBuf> {
         self.sauce_path
             .ancestors()
             .filter(|p| p.strip_prefix(&self.data_dir).is_ok())
