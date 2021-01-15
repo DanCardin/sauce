@@ -35,8 +35,7 @@ impl Saucefile {
 
     fn from_file_contents(path: &PathBuf, contents: String) -> Document {
         contents.parse::<Document>().unwrap_or_else(|e| {
-            eprintln!("Failed to parse {}", path.to_string_lossy());
-            eprintln!("{}", e);
+            eprintln!("Failed to parse {}: {}", path.to_string_lossy(), e);
             Document::new()
         })
     }

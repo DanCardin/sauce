@@ -8,14 +8,16 @@ use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Context {
-    pub home: PathBuf,
-    pub data_dir: PathBuf,
-    pub current_dir: PathBuf,
+    home: PathBuf,
+    data_dir: PathBuf,
+    path: PathBuf,
     pub sauce_path: PathBuf,
 }
 
 impl Context {
-    pub fn new() -> Result<Self> {
+    pub fn from_path<P: Into<PathBuf>>(path: P) -> Result<Self> {
+        let path = path.into().canonicalize()?;
+
         let home = home_dir()?;
 
         let strategy = Xdg::new(AppStrategyArgs {
@@ -25,17 +27,20 @@ impl Context {
         })?;
         let data_dir = strategy.data_dir();
 
-        let current_dir = env::current_dir()?;
-
-        let relative_path = current_dir.strip_prefix(&home)?;
+        let relative_path = path.strip_prefix(&home)?;
         let sauce_path = data_dir.join(relative_path).with_extension("toml");
 
         Ok(Self {
             home,
             data_dir,
-            current_dir,
+            path,
             sauce_path,
         })
+    }
+
+    pub fn from_current_dir() -> Result<Self> {
+        let current_dir = env::current_dir()?;
+        Self::from_path(current_dir)
     }
 
     pub fn cascade_paths(self: &Self) -> Vec<PathBuf> {

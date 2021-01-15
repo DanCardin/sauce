@@ -1,4 +1,5 @@
 use crate::context::Context;
+use crate::option::GlobalOptions;
 use crate::output::Output;
 use crate::saucefile::Saucefile;
 
@@ -40,37 +41,39 @@ impl<'a> Shell {
         output.push_result(statement);
     }
 
-    pub fn clear(&self, output: &mut Output) {
+    pub fn clear(&self, output: &mut Output, options: GlobalOptions) {
         output
-            .with_result(self.render_vars(|var, _| format!("unset {}", var), None))
-            .with_result(self.render_aliases(|var, _| format!("unalias {} 2>/dev/null", var), None))
+            .with_result(self.render_vars(|var, _| format!("unset {}", var), options.as_))
+            .with_result(
+                self.render_aliases(|var, _| format!("unalias {} 2>/dev/null", var), options.as_),
+            )
             .with_message("Cleared your sauce");
     }
 
-    pub fn show(&self, output: &mut Output, tag: Option<&str>) {
+    pub fn show(&self, output: &mut Output, options: GlobalOptions) {
         output
             .with_message(self.render_vars(
                 |var, value| format!("export {}={}", var, escape(&value)),
-                tag,
+                options.as_,
             ))
             .with_message(self.render_aliases(
                 |var, value| format!("alias {}={}", var, escape(&value)),
-                tag,
+                options.as_,
             ))
-            .with_message(self.render_functions(tag));
+            .with_message(self.render_functions(options.as_));
     }
 
-    pub fn execute(&self, output: &mut Output, tag: Option<&str>) {
+    pub fn execute(&self, output: &mut Output, options: GlobalOptions) {
         output
             .with_result(self.render_vars(
                 |var, value| format!("export {}={}", var, escape(&value)),
-                tag,
+                options.as_,
             ))
             .with_result(self.render_aliases(
                 |var, value| format!("alias {}={}", var, escape(&value)),
-                tag,
+                options.as_,
             ))
-            .with_result(self.render_functions(tag))
+            .with_result(self.render_functions(options.as_))
             .with_message(format!(
                 "Sourced {}",
                 self.context.sauce_path.to_string_lossy()
