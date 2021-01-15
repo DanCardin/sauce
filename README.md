@@ -1,5 +1,11 @@
 # Sauce
 
+<p align="center">
+<a href="https://github.com/DanCardin/sauce/actions?query=workflow%3ATest"><img src="https://github.com/DanCardin/sauce/workflows/Test/badge.svg" alt="Build Status"></a>
+<img src="https://img.shields.io/crates/l/sauce.svg" alt="license">
+<a href="https://crates.io/crates/sauce"><img src="https://img.shields.io/crates/v/sauce.svg?colorB=319e8c" alt="Version info"></a><br>
+</p>
+
 > The central truth is the central truth, and nothing that I care about
 > is relative
 
@@ -10,6 +16,17 @@ Core Goals:
 
 - Store all data centrally, not relative to the directory being sauced
 - Cascade data from parent directories downwards
+
+## Installation
+
+### With Cargo
+
+- `cargo install sauce`
+
+### Download Release
+
+- Download Linux/Mac binary from
+  [Releases](https://github.com/DanCardin/sauce/releases)
 
 ## Example Workflow
 
@@ -142,8 +159,9 @@ other unnamespaced values.
     in-place modification strategy which essentially requires that
     `sauce` maintains sole control over all tracked variables (because
     it can/will `unset` them if asked).
-- more targets: arbitrary key-value pairs
+- tests/code coverage
 - refactor into thin cli app + library
+- more targets: arbitrary key-value pairs
 - pipe `sauce show` to a pager when beyond a full terminal height
 - colorized output
 - Ability to use shell hooks to automatically perform i.e. `sauce` on
