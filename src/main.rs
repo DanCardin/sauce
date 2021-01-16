@@ -29,9 +29,23 @@ struct Options {
     #[clap(short, long, parse(from_occurrences))]
     verbose: i32,
 
+    /// The path which should be sauce'd. Defaults to the current directory.
+    #[clap(short, long)]
+    path: Option<String>,
+
     /// Runs the given command "as" the given "as" namespace.
     #[clap(short, long)]
     r#as: Option<String>,
+
+    /// Filters the set of values to load, allowing globs. By default filters apply to
+    /// all targets, but also can use the form "<target>:<glob>" to be more specific.
+    #[clap(short, long)]
+    glob: Option<String>,
+
+    /// Filters the set of values to load, literally. By default filters apply to all
+    /// targets, but also can use the form "<target>:<filter>" to be more specific.
+    #[clap(short, long)]
+    filter: Option<String>,
 
     #[clap(subcommand)]
     subcmd: Option<SubCommand>,
@@ -42,17 +56,9 @@ enum SubCommand {
     New(NewCommand),
     Set(SetCommand),
     Shell(ShellCommand),
-    Edit(CommandPath),
+    Edit,
     Show,
     Clear,
-}
-
-/// Sets to the sauce file
-#[derive(Clap, Debug)]
-pub struct CommandPath {
-    /// the kind of thing to set
-    #[clap(default_value = ".")]
-    path: String,
 }
 
 fn main() -> Result<()> {
@@ -66,22 +72,23 @@ fn main() -> Result<()> {
         std::process::exit(1)
     });
 
-    let context = Context::from_current_dir()?;
+    let options = GlobalOptions::new(
+        opts.glob.as_deref(),
+        opts.filter.as_deref(),
+        opts.r#as.as_deref(),
+        opts.path.as_deref(),
+    );
+
+    let context = Context::new(&options)?;
     let mut output = Output::default();
-
-    let options = GlobalOptions::new(opts.r#as.as_deref(), &[], &[]);
-
     match opts.subcmd {
         Some(SubCommand::New(cmd)) => crate::commands::new::new(context, cmd, &mut output),
         Some(SubCommand::Set(cmd)) => crate::commands::set::set(context, cmd, &mut output),
         Some(SubCommand::Shell(cmd)) => crate::commands::shell::run(context, cmd, &mut output),
-        Some(SubCommand::Edit(cmd)) => {
-            let context = Context::from_path(cmd.path)?;
-            Shell::new(context).edit(&mut output);
-        }
-        Some(SubCommand::Show) => Shell::new(context).show(&mut output, options),
-        Some(SubCommand::Clear) => Shell::new(context).clear(&mut output, options),
-        None => Shell::new(context).execute(&mut output, options),
+        Some(SubCommand::Edit) => Shell::new(context).edit(&mut output),
+        Some(SubCommand::Show) => Shell::new(context).show(&mut output, &options),
+        Some(SubCommand::Clear) => Shell::new(context).clear(&mut output, &options),
+        None => Shell::new(context).execute(&mut output, &options),
     };
 
     let out = std::io::stderr();

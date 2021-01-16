@@ -1,4 +1,5 @@
 use crate::context::Context;
+use crate::option::GlobalOptions;
 use anyhow::Result;
 use indexmap::IndexMap;
 use toml_edit::Table;
@@ -104,45 +105,53 @@ impl Saucefile {
         Ok(())
     }
 
-    fn section(&mut self, section: &str, tag: Option<&str>) -> Vec<(String, String)> {
-        let tag = tag.unwrap_or("default");
+    fn section(&mut self, sections: &[&str], options: &GlobalOptions) -> Vec<(String, String)> {
+        let tag = options.as_.unwrap_or("default");
 
         let mut map = IndexMap::new();
 
         for document in self.documents.iter() {
-            if let Some(vars) = document[section].as_table() {
-                for (key, item) in vars.iter() {
-                    let var = match item {
-                        Item::Value(value) => match value {
-                            Value::InlineTable(table) => match table.get(&tag) {
-                                Some(value) => unwrap_toml_value(value),
+            for section in sections {
+                if let Some(vars) = document[section].as_table() {
+                    for (key, item) in vars.iter() {
+                        if !options.glob_match(sections, key)
+                            || !options.filter_match(sections, key)
+                        {
+                            continue;
+                        }
+
+                        let var = match item {
+                            Item::Value(value) => match value {
+                                Value::InlineTable(table) => match table.get(&tag) {
+                                    Some(value) => unwrap_toml_value(value),
+                                    _ => "".to_string(),
+                                },
+                                _ => unwrap_toml_value(value),
+                            },
+                            Item::Table(table) => match &table[&tag] {
+                                Item::Value(value) => unwrap_toml_value(value),
                                 _ => "".to_string(),
                             },
-                            _ => unwrap_toml_value(value),
-                        },
-                        Item::Table(table) => match &table[&tag] {
-                            Item::Value(value) => unwrap_toml_value(value),
                             _ => "".to_string(),
-                        },
-                        _ => "".to_string(),
-                    };
-                    map.insert(key.to_string(), var);
+                        };
+                        map.insert(key.to_string(), var);
+                    }
                 }
             }
         }
         map.into_iter().collect()
     }
 
-    pub fn vars(&mut self, tag: Option<&str>) -> Vec<(String, String)> {
-        self.section("environment", tag)
+    pub fn vars(&mut self, options: &GlobalOptions) -> Vec<(String, String)> {
+        self.section(&["env", "environment"], options)
     }
 
-    pub fn aliases(&mut self, tag: Option<&str>) -> Vec<(String, String)> {
-        self.section("alias", tag)
+    pub fn aliases(&mut self, options: &GlobalOptions) -> Vec<(String, String)> {
+        self.section(&["alias"], options)
     }
 
-    pub fn functions(&mut self, tag: Option<&str>) -> Vec<(String, String)> {
-        self.section("function", tag)
+    pub fn functions(&mut self, options: &GlobalOptions) -> Vec<(String, String)> {
+        self.section(&["function"], options)
     }
 }
 

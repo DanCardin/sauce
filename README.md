@@ -41,11 +41,11 @@ No file at ~/.local/share/sauce/foo.toml
 ❯ sauce new
 
 # My "foo" project has got some corresponding aws profile
-❯ sauce add var AWS_PROFILE=foo
+❯ sauce set var AWS_PROFILE=foo
 
 # The "bar" subdirectory has something more specific
 ❯ cd bar
-❯ sauce add var foo=bar
+❯ sauce set var foo=bar
 
 # The core purpose!
 ❯ sauce
@@ -125,7 +125,7 @@ being tracked. Given the above example you might see:
 
 ### `sauce add <target-type> NAME=value`
 
-For example, `sauce add var AWS_PROFILE=foo FOO=bar`.
+For example, `sauce set var AWS_PROFILE=foo FOO=bar`.
 
 This is convenient when you realize you want to `sauce` a var or
 whatever. There is also `sauce edit` which will open your `$EDITOR` so
@@ -151,7 +151,11 @@ other unnamespaced values.
 
 ## Planned Work
 
-- Support `--glob DATABASE_*` and `--filter DATABASE_PASSWORD`.
+- more robust shell-specific trait behavior
+- protect cascaded lookups from editing by internally storing them
+  separately
+- tests/code coverage
+- refactor into thin cli app + library
 - “strategies” (nested shell vs in-place alterations of the current
   shell)
   - Given strategies, the ability to unset/revert alterations in a more
@@ -159,8 +163,6 @@ other unnamespaced values.
     in-place modification strategy which essentially requires that
     `sauce` maintains sole control over all tracked variables (because
     it can/will `unset` them if asked).
-- tests/code coverage
-- refactor into thin cli app + library
 - more targets: arbitrary key-value pairs
 - pipe `sauce show` to a pager when beyond a full terminal height
 - colorized output

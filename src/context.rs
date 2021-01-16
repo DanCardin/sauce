@@ -6,6 +6,8 @@ use etcetera::home_dir;
 use std::env;
 use std::path::PathBuf;
 
+use crate::option::GlobalOptions;
+
 #[derive(Debug)]
 pub struct Context {
     home: PathBuf,
@@ -43,7 +45,19 @@ impl Context {
         Self::from_path(current_dir)
     }
 
+    pub fn new(options: &GlobalOptions) -> Result<Self> {
+        if let Some(path) = options.path {
+            Self::from_path(path)
+        } else {
+            Self::from_current_dir()
+        }
+    }
+
     pub fn cascade_paths(&self) -> Vec<PathBuf> {
+        if self.sauce_path == self.data_dir.with_extension("toml") {
+            return vec![self.sauce_path.clone()];
+        }
+
         self.sauce_path
             .ancestors()
             .filter(|p| p.strip_prefix(&self.data_dir).is_ok())
