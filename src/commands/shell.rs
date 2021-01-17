@@ -1,8 +1,7 @@
 use clap::Clap;
 
-use crate::context::Context;
 use crate::output::Output;
-use crate::shell::Shell;
+use crate::shell::{actions, Shell};
 
 /// Adds to the sauce file
 #[derive(Clap, Debug)]
@@ -17,10 +16,9 @@ pub enum ShellKinds {
     Init,
 }
 
-pub fn run(context: Context, cmd: ShellCommand, output: &mut Output) {
-    let shell = Shell::new(context);
+pub fn run(shell_kind: &dyn Shell, cmd: ShellCommand, output: &mut Output) {
     match cmd.kind {
-        Some(ShellKinds::Init) => shell.init(output),
-        None => shell.create_subshell(output),
+        Some(ShellKinds::Init) => actions::init(shell_kind, output),
+        None => return, // shell.create_subshell(output),
     }
 }

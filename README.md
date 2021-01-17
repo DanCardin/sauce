@@ -151,7 +151,6 @@ other unnamespaced values.
 
 ## Planned Work
 
-- more robust shell-specific trait behavior
 - protect cascaded lookups from editing by internally storing them
   separately
 - tests/code coverage

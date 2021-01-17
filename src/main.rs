@@ -10,7 +10,6 @@ use crate::commands::set::SetCommand;
 use crate::commands::shell::ShellCommand;
 use crate::context::Context;
 use crate::option::GlobalOptions;
-use crate::shell::Shell;
 use anyhow::Result;
 use output::Output;
 use std::io::Write;
@@ -80,15 +79,20 @@ fn main() -> Result<()> {
     );
 
     let context = Context::new(&options)?;
+
+    let shell_kind = &*shell::detect();
+
     let mut output = Output::default();
     match opts.subcmd {
         Some(SubCommand::New(cmd)) => crate::commands::new::new(context, cmd, &mut output),
         Some(SubCommand::Set(cmd)) => crate::commands::set::set(context, cmd, &mut output),
-        Some(SubCommand::Shell(cmd)) => crate::commands::shell::run(context, cmd, &mut output),
-        Some(SubCommand::Edit) => Shell::new(context).edit(&mut output),
-        Some(SubCommand::Show) => Shell::new(context).show(&mut output, &options),
-        Some(SubCommand::Clear) => Shell::new(context).clear(&mut output, &options),
-        None => Shell::new(context).execute(&mut output, &options),
+        Some(SubCommand::Shell(cmd)) => crate::commands::shell::run(shell_kind, cmd, &mut output),
+        Some(SubCommand::Edit) => shell::actions::edit(shell_kind, context, &mut output),
+        Some(SubCommand::Show) => shell::actions::show(shell_kind, context, &mut output, &options),
+        Some(SubCommand::Clear) => {
+            shell::actions::clear(shell_kind, context, &mut output, &options)
+        }
+        None => shell::actions::execute(shell_kind, context, &mut output, &options),
     };
 
     let out = std::io::stderr();
