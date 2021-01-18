@@ -7,6 +7,17 @@ pub struct GlobalOptions<'a> {
     pub path: Option<&'a str>,
 }
 
+impl<'a> Default for GlobalOptions<'a> {
+    fn default() -> Self {
+        Self {
+            as_: None,
+            globs: None,
+            filters: None,
+            path: None,
+        }
+    }
+}
+
 impl<'a> GlobalOptions<'a> {
     pub fn new(
         glob: Option<&'a str>,
@@ -83,5 +94,37 @@ where
         false
     } else {
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    mod parse_match_options {
+        use super::super::*;
+        use pretty_assertions::assert_eq;
+
+        #[test]
+        fn it_no_ops_with_none_value() {
+            let result = parse_match_option(None);
+            assert_eq!(result, None)
+        }
+
+        #[test]
+        fn it_splits_matches_on_commas() {
+            let result = parse_match_option(Some("foo,bar"));
+            assert_eq!(result, Some(vec![(None, "foo"), (None, "bar")]))
+        }
+
+        #[test]
+        fn it_splits_target_and_term() {
+            let result = parse_match_option(Some("env:bar"));
+            assert_eq!(result, Some(vec![(Some("env"), "bar")]))
+        }
+
+        #[test]
+        fn it_multiple() {
+            let result = parse_match_option(Some("foo,alias:wat"));
+            assert_eq!(result, Some(vec![(None, "foo"), (Some("alias"), "wat")]))
+        }
     }
 }
