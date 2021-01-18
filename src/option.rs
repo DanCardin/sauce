@@ -56,9 +56,9 @@ impl<'a> GlobalOptions<'a> {
 
 fn parse_match_option(value: Option<&str>) -> Option<Vec<(Option<&str>, &str)>> {
     value.map(|v| {
-        v.split(",")
+        v.split(',')
             .map(|raw| {
-                let mut iter = raw.splitn(2, ":");
+                let mut iter = raw.splitn(2, ':');
                 let first = iter.next();
                 let second = iter.next();
                 match second {

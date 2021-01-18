@@ -17,8 +17,7 @@ pub enum ShellKinds {
 }
 
 pub fn run(shell_kind: &dyn Shell, cmd: ShellCommand, output: &mut Output) {
-    match cmd.kind {
-        Some(ShellKinds::Init) => actions::init(shell_kind, output),
-        None => return, // shell.create_subshell(output),
+    if let Some(ShellKinds::Init) = cmd.kind {
+        actions::init(shell_kind, output)
     }
 }
