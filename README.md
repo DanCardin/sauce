@@ -1,9 +1,15 @@
 # Sauce
 
 <p align="center">
-<a href="https://github.com/DanCardin/sauce/actions?query=workflow%3ATest"><img src="https://github.com/DanCardin/sauce/workflows/Test/badge.svg" alt="Build Status"></a>
 <img src="https://img.shields.io/crates/l/sauce.svg" alt="license">
-<a href="https://crates.io/crates/sauce"><img src="https://img.shields.io/crates/v/sauce.svg?colorB=319e8c" alt="Version info"></a><br>
+<a href="https://crates.io/crates/sauce">
+<img src="https://img.shields.io/crates/v/sauce.svg?colorB=319e8c" alt="Version info">
+</a>
+<a href="https://github.com/DanCardin/sauce/actions?query=workflow%3ATest">
+<img src="https://github.com/DanCardin/sauce/workflows/Test/badge.svg" alt="Build Status">
+</a> <a href="https://codecov.io/gh/DanCardin/sauce">
+<img src="https://codecov.io/gh/DanCardin/sauce/branch/main/graph/badge.svg?token=U7NQIWXWKW"/>
+</a><br>
 </p>
 
 > The central truth is the central truth, and nothing that I care about
