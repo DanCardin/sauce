@@ -47,10 +47,12 @@ fn parse_match_option(value: Option<&str>) -> Option<Vec<(Option<&str>, &str)>> 
     value.map(|v| {
         v.split(",")
             .map(|raw| {
-                let items = raw.splitn(2, ":").collect::<Vec<_>>();
-                match &items[..] {
-                    &[tag, g] => (Some(tag), g),
-                    _ => (None, raw),
+                let mut iter = raw.splitn(2, ":");
+                let first = iter.next();
+                let second = iter.next();
+                match second {
+                    Some(second) => (first, second),
+                    None => (None, raw),
                 }
             })
             .collect()
