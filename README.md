@@ -151,8 +151,6 @@ other unnamespaced values.
 
 ## Planned Work
 
-- protect cascaded lookups from editing by internally storing them
-  separately
 - tests/code coverage
 - refactor into thin cli app + library
 - “strategies” (nested shell vs in-place alterations of the current
