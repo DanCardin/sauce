@@ -8,13 +8,7 @@ pub fn escape(value: &str) -> String {
 }
 
 pub fn get_binary() -> String {
-    let prefix = if cfg!(debug_assertions) {
-        "./target/debug/"
-    } else {
-        ""
-    };
-
-    format!("{}{}", prefix, clap::crate_name!())
+    clap::crate_name!().to_string()
 }
 
 pub fn detect() -> Box<dyn Shell> {

@@ -157,7 +157,6 @@ other unnamespaced values.
 
 ## Planned Work
 
-- tests/code coverage
 - refactor into thin cli app + library
 - “strategies” (nested shell vs in-place alterations of the current
   shell)

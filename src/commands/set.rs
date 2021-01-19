@@ -85,7 +85,7 @@ fn set_alias(
         let parts: Vec<&str> = values.splitn(2, '=').collect();
         let var = parts[0];
         let value = if parts.len() > 1 { parts[1] } else { "" };
-        saucefile.set_alias(var.to_string(), value.to_string());
+        saucefile.set_alias(var, value);
         output.push_message(format!("Set '{}' to {}", var, value));
     }
     if saucefile.write(&context).is_err() {
