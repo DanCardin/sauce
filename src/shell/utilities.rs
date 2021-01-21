@@ -1,5 +1,5 @@
 use crate::shell::kinds::{Bash, Zsh};
-use std::env;
+use std::{env, path::Path};
 
 use crate::shell::Shell;
 
@@ -12,11 +12,14 @@ pub fn get_binary() -> String {
 }
 
 pub fn detect() -> Box<dyn Shell> {
-    let shell_name = env::var_os("SHELL").and_then(|s| s.into_string().ok());
+    let shell = std::env::var_os("SHELL");
+    let shell = shell
+        .as_ref()
+        .and_then(|s| Path::new(s).file_stem())
+        .and_then(|s| s.to_str());
 
-    match shell_name.as_deref() {
+    match shell {
         Some("zsh") => Box::new(Zsh {}),
-        Some("bash") | Some("sh") => Box::new(Bash {}),
         _ => Box::new(Bash {}),
     }
 }

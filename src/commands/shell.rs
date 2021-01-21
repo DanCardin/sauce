@@ -1,7 +1,7 @@
 use clap::Clap;
 
-use crate::output::Output;
 use crate::shell::{actions, Shell};
+use crate::{option::Options, output::Output};
 
 /// Adds to the sauce file
 #[derive(Clap, Debug)]
@@ -16,8 +16,8 @@ pub enum ShellKinds {
     Init,
 }
 
-pub fn run(shell_kind: &dyn Shell, cmd: ShellCommand, output: &mut Output) {
+pub fn run(shell_kind: &dyn Shell, cmd: ShellCommand, output: &mut Output, options: &Options) {
     if let Some(ShellKinds::Init) = cmd.kind {
-        actions::init(shell_kind, output)
+        actions::init(shell_kind, output, options)
     }
 }

@@ -1,14 +1,14 @@
 use crate::context::Context;
-use crate::option::GlobalOptions;
+use crate::option::Options;
 use anyhow::Result;
 use indexmap::IndexMap;
 use itertools::iproduct;
 use toml_edit::Table;
 
+use crate::toml::get_document;
 use std::fs::OpenOptions;
 use std::io::BufWriter;
-use std::io::{BufReader, Read, Write};
-use std::path::{Path, PathBuf};
+use std::io::Write;
 use std::str::FromStr;
 use toml_edit::{value, Document, Item, Value};
 
@@ -18,26 +18,7 @@ pub struct Saucefile {
     pub document: Document,
 }
 
-fn read_file(path: &Path) -> String {
-    if let Ok(file) = std::fs::File::open(path) {
-        let mut reader = BufReader::new(file);
-
-        let mut contents = String::new();
-        reader.read_to_string(&mut contents).unwrap_or(0);
-        contents
-    } else {
-        String::new()
-    }
-}
-
 impl Saucefile {
-    fn from_file_contents(path: &PathBuf, contents: String) -> Document {
-        contents.parse::<Document>().unwrap_or_else(|e| {
-            eprintln!("Failed to parse {}: {}", path.to_string_lossy(), e);
-            Document::new()
-        })
-    }
-
     pub fn read(context: &Context) -> Saucefile {
         let mut base_sf: Saucefile = Self::default();
 
@@ -48,7 +29,7 @@ impl Saucefile {
                 continue;
             }
 
-            let document = Self::from_file_contents(&path, read_file(&path));
+            let document = get_document(&path);
 
             if paths.peek().is_some() {
                 base_sf.ancestors.push(document)
@@ -101,7 +82,7 @@ impl Saucefile {
         Ok(())
     }
 
-    fn section(&mut self, sections: &[&str], options: &GlobalOptions) -> Vec<(&str, String)> {
+    fn section(&mut self, sections: &[&str], options: &Options) -> Vec<(&str, String)> {
         let tag = options.as_.unwrap_or("default");
 
         let documents = self.ancestors.iter().chain(vec![&self.document]);
@@ -135,15 +116,15 @@ impl Saucefile {
             .collect()
     }
 
-    pub fn vars(&mut self, options: &GlobalOptions) -> Vec<(&str, String)> {
+    pub fn vars(&mut self, options: &Options) -> Vec<(&str, String)> {
         self.section(&["env", "environment"], options)
     }
 
-    pub fn aliases(&mut self, options: &GlobalOptions) -> Vec<(&str, String)> {
+    pub fn aliases(&mut self, options: &Options) -> Vec<(&str, String)> {
         self.section(&["alias"], options)
     }
 
-    pub fn functions(&mut self, options: &GlobalOptions) -> Vec<(&str, String)> {
+    pub fn functions(&mut self, options: &Options) -> Vec<(&str, String)> {
         self.section(&["function"], options)
     }
 }
@@ -177,7 +158,7 @@ mod tests {
 
         #[test]
         fn it_includes_values_in_section() {
-            let options = GlobalOptions::default();
+            let options = Options::default();
             let mut sauce = Saucefile::default();
 
             let toml = r#"
@@ -192,7 +173,7 @@ mod tests {
 
         #[test]
         fn it_includes_when_one_section_option_matches() {
-            let options = GlobalOptions::default();
+            let options = Options::default();
             let mut sauce = Saucefile::default();
 
             let toml = r#"
@@ -207,7 +188,7 @@ mod tests {
 
         #[test]
         fn it_excludes_when_no_section_matches() {
-            let options = GlobalOptions::default();
+            let options = Options::default();
             let mut sauce = Saucefile::default();
 
             let toml = r#"
@@ -222,7 +203,7 @@ mod tests {
 
         #[test]
         fn it_chooses_the_default_tag() {
-            let options = GlobalOptions::default();
+            let options = Options::default();
             let mut sauce = Saucefile::default();
 
             let toml = r#"
@@ -246,7 +227,7 @@ mod tests {
 
         #[test]
         fn it_chooses_the_correct_tag() {
-            let mut options = GlobalOptions::default();
+            let mut options = Options::default();
             options.as_ = Some("wow");
 
             let mut sauce = Saucefile::default();
@@ -277,7 +258,7 @@ mod tests {
 
         #[test]
         fn it_yields_empty_when_empty() {
-            let options = GlobalOptions::default();
+            let options = Options::default();
             let mut sauce = Saucefile::default();
             let result = sauce.vars(&options);
             assert_eq!(result, vec![]);
@@ -285,7 +266,7 @@ mod tests {
 
         #[test]
         fn it_roundtrips_value() {
-            let options = GlobalOptions::default();
+            let options = Options::default();
             let mut sauce = Saucefile::default();
 
             sauce.set_var("meow", "5");
@@ -301,7 +282,7 @@ mod tests {
 
         #[test]
         fn it_yields_empty_when_empty() {
-            let options = GlobalOptions::default();
+            let options = Options::default();
             let mut sauce = Saucefile::default();
             let result = sauce.aliases(&options);
             assert_eq!(result, vec![]);
@@ -309,7 +290,7 @@ mod tests {
 
         #[test]
         fn it_roundtrips_value() {
-            let options = GlobalOptions::default();
+            let options = Options::default();
             let mut sauce = Saucefile::default();
 
             sauce.set_alias("meow", "5");
@@ -325,7 +306,7 @@ mod tests {
 
         #[test]
         fn it_yields_empty_when_empty() {
-            let options = GlobalOptions::default();
+            let options = Options::default();
             let mut sauce = Saucefile::default();
             let result = sauce.functions(&options);
             assert_eq!(result, vec![]);
@@ -333,7 +314,7 @@ mod tests {
 
         #[test]
         fn it_roundtrips_value() {
-            let options = GlobalOptions::default();
+            let options = Options::default();
             let mut sauce = Saucefile::default();
 
             sauce.set_function("meow", "5");

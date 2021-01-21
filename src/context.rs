@@ -1,12 +1,9 @@
 use anyhow::Result;
-use etcetera::app_strategy::AppStrategy;
-use etcetera::app_strategy::AppStrategyArgs;
-use etcetera::app_strategy::Xdg;
 use etcetera::home_dir;
 use std::env;
 use std::path::PathBuf;
 
-use crate::option::GlobalOptions;
+use crate::option::Options;
 
 #[derive(Debug)]
 pub struct Context {
@@ -17,17 +14,11 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn from_path<P: Into<PathBuf>>(path: P) -> Result<Self> {
+    pub fn from_path<P: Into<PathBuf>>(path: P, options: &Options) -> Result<Self> {
         let path = path.into().canonicalize()?;
 
         let home = home_dir()?;
-
-        let strategy = Xdg::new(AppStrategyArgs {
-            top_level_domain: "com".to_string(),
-            author: "dancardin".to_string(),
-            app_name: "sauce".to_string(),
-        })?;
-        let data_dir = strategy.data_dir();
+        let data_dir = options.settings.data_dir.clone();
 
         let relative_path = path.strip_prefix(&home)?;
         let sauce_path = data_dir.join(relative_path).with_extension("toml");
@@ -40,16 +31,16 @@ impl Context {
         })
     }
 
-    pub fn from_current_dir() -> Result<Self> {
+    pub fn from_current_dir(options: &Options) -> Result<Self> {
         let current_dir = env::current_dir()?;
-        Self::from_path(current_dir)
+        Self::from_path(current_dir, options)
     }
 
-    pub fn new(options: &GlobalOptions) -> Result<Self> {
+    pub fn new(options: &Options) -> Result<Self> {
         if let Some(path) = options.path {
-            Self::from_path(path)
+            Self::from_path(path, options)
         } else {
-            Self::from_current_dir()
+            Self::from_current_dir(options)
         }
     }
 

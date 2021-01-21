@@ -3,15 +3,18 @@ mod context;
 mod option;
 mod output;
 mod saucefile;
+mod settings;
 mod shell;
+mod toml;
 
 use crate::commands::new::NewCommand;
 use crate::commands::set::SetCommand;
 use crate::commands::shell::ShellCommand;
 use crate::context::Context;
-use crate::option::GlobalOptions;
+use crate::option::Options;
 use anyhow::Result;
 use output::Output;
+use settings::Settings;
 use std::io::Write;
 
 use clap::Clap;
@@ -19,7 +22,7 @@ use clap::Clap;
 /// Sauce!
 #[derive(Clap, Debug)]
 #[clap(version, author)]
-struct Options {
+struct CliOptions {
     /// Sets a custom config file. Could have been an Option<T> with no default too
     #[clap(short, long)]
     config: Option<String>,
@@ -46,6 +49,10 @@ struct Options {
     #[clap(short, long)]
     filter: Option<String>,
 
+    /// Supplied during autoload sequence. Not generally useful to end-users.
+    #[clap(long)]
+    autoload: bool,
+
     #[clap(subcommand)]
     subcmd: Option<SubCommand>,
 }
@@ -64,14 +71,16 @@ fn main() -> Result<()> {
     let stderr = std::io::stderr();
     let mut handle = stderr.lock();
 
-    let opts: Options = Options::try_parse().unwrap_or_else(|e| {
+    let opts: CliOptions = CliOptions::try_parse().unwrap_or_else(|e| {
         let message = format!("{}", e);
         handle.write_all(message.as_ref()).unwrap();
         handle.flush().unwrap();
         std::process::exit(1)
     });
 
-    let options = GlobalOptions::new(
+    let settings = Settings::load()?;
+    let options = Options::new(
+        settings,
         opts.glob.as_deref(),
         opts.filter.as_deref(),
         opts.r#as.as_deref(),
@@ -84,10 +93,12 @@ fn main() -> Result<()> {
 
     let mut output = Output::default();
     match opts.subcmd {
+        Some(SubCommand::Shell(cmd)) => {
+            crate::commands::shell::run(shell_kind, cmd, &mut output, &options)
+        }
         Some(SubCommand::New(cmd)) => crate::commands::new::new(context, cmd, &mut output),
-        Some(SubCommand::Set(cmd)) => crate::commands::set::set(context, cmd, &mut output),
-        Some(SubCommand::Shell(cmd)) => crate::commands::shell::run(shell_kind, cmd, &mut output),
         Some(SubCommand::Edit) => shell::actions::edit(shell_kind, context, &mut output),
+        Some(SubCommand::Set(cmd)) => crate::commands::set::set(context, cmd, &mut output),
         Some(SubCommand::Show) => shell::actions::show(shell_kind, context, &mut output, &options),
         Some(SubCommand::Clear) => {
             shell::actions::clear(shell_kind, context, &mut output, &options)

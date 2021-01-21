@@ -8,7 +8,7 @@ impl Shell for Bash {
         format!("\"$EDITOR\" '{}'", path)
     }
 
-    fn init(&self, binary: &str) -> String {
+    fn init(&self, binary: &str, _autoload: bool) -> String {
         format!(
             r#"
             sauce() {{

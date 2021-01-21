@@ -1,15 +1,19 @@
 use glob::Pattern;
 
-pub struct GlobalOptions<'a> {
+use crate::settings::Settings;
+
+pub struct Options<'a> {
+    pub settings: Settings,
     pub as_: Option<&'a str>,
     pub globs: Option<Vec<(Option<&'a str>, &'a str)>>,
     pub filters: Option<Vec<(Option<&'a str>, &'a str)>>,
     pub path: Option<&'a str>,
 }
 
-impl<'a> Default for GlobalOptions<'a> {
+impl<'a> Default for Options<'a> {
     fn default() -> Self {
         Self {
+            settings: Settings::default(),
             as_: None,
             globs: None,
             filters: None,
@@ -18,8 +22,9 @@ impl<'a> Default for GlobalOptions<'a> {
     }
 }
 
-impl<'a> GlobalOptions<'a> {
+impl<'a> Options<'a> {
     pub fn new(
+        settings: Settings,
         glob: Option<&'a str>,
         filter: Option<&'a str>,
         as_: Option<&'a str>,
@@ -29,6 +34,7 @@ impl<'a> GlobalOptions<'a> {
         let filters = parse_match_option(filter);
 
         Self {
+            settings,
             as_,
             path,
             globs,

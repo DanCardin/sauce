@@ -155,8 +155,25 @@ Given `sauce --as prod`, you will get the “prod” namespace
 (i.e. AWS\_PROFILE=projectname-prod) for this value, as well as all
 other unnamespaced values.
 
+### `sauce --glob glob` and `sauce --filter filter`
+
+Either `--glob` and/or `--filter` can be applied in order to filter down
+the set of things which are returned from `sauce` (or any subcommand).
+
+You can supply multiple globs/filters by separating them by `,`,
+i.e. `--filter foo,bar,baz`.
+
+You can also specify globs/filters specific to a particular target,
+which might be important given that there can be overlap between
+targets. Targets are separated from their search term by `:`,
+i.e. `--glob env:database*,function:work-*`.
+
 ## Planned Work
 
+- Ability to use shell hooks to automatically perform i.e. `sauce` on
+  `cd` (i.e. direnv)
+- Ability to set config from cli
+- Local settings inside the local saucefile
 - refactor into thin cli app + library
 - “strategies” (nested shell vs in-place alterations of the current
   shell)
@@ -168,5 +185,3 @@ other unnamespaced values.
 - more targets: arbitrary key-value pairs
 - pipe `sauce show` to a pager when beyond a full terminal height
 - colorized output
-- Ability to use shell hooks to automatically perform i.e. `sauce` on
-  `cd` (i.e. direnv)

@@ -1,5 +1,5 @@
 use crate::context::Context;
-use crate::option::GlobalOptions;
+use crate::option::Options;
 use crate::output::Output;
 use crate::saucefile::Saucefile;
 use crate::shell::utilities::get_binary;
@@ -11,13 +11,13 @@ pub fn edit(shell: &dyn Shell, context: Context, output: &mut Output) {
     output.push_result(result);
 }
 
-pub fn init(shell: &dyn Shell, output: &mut Output) {
+pub fn init(shell: &dyn Shell, output: &mut Output, options: &Options) {
     let binary = get_binary();
-    let result = shell.init(&binary);
+    let result = shell.init(&binary, options.settings.autoload_hook);
     output.push_result(result);
 }
 
-pub fn clear(shell: &dyn Shell, context: Context, output: &mut Output, options: &GlobalOptions) {
+pub fn clear(shell: &dyn Shell, context: Context, output: &mut Output, options: &Options) {
     output
         .with_result(render_vars(&context, options, |k, _| shell.unset_var(k)))
         .with_result(render_aliases(&context, options, |k, _| {
@@ -29,7 +29,7 @@ pub fn clear(shell: &dyn Shell, context: Context, output: &mut Output, options: 
         .with_message("Cleared your sauce");
 }
 
-pub fn show(shell: &dyn Shell, context: Context, output: &mut Output, options: &GlobalOptions) {
+pub fn show(shell: &dyn Shell, context: Context, output: &mut Output, options: &Options) {
     output
         .with_message(render_vars(&context, options, |k, v| shell.set_var(k, v)))
         .with_message(render_aliases(&context, options, |k, v| {
@@ -40,7 +40,10 @@ pub fn show(shell: &dyn Shell, context: Context, output: &mut Output, options: &
         }));
 }
 
-pub fn execute(shell: &dyn Shell, context: Context, output: &mut Output, options: &GlobalOptions) {
+pub fn execute(shell: &dyn Shell, context: Context, output: &mut Output, options: &Options) {
+    if !options.settings.autoload {
+        return;
+    }
     output
         .with_result(render_vars(&context, options, |k, v| shell.set_var(k, v)))
         .with_result(render_aliases(&context, options, |k, v| {
@@ -52,7 +55,7 @@ pub fn execute(shell: &dyn Shell, context: Context, output: &mut Output, options
         .with_message(format!("Sourced {}", context.sauce_path.to_string_lossy()));
 }
 
-fn render_vars<F>(context: &Context, options: &GlobalOptions, mut format_row: F) -> String
+fn render_vars<F>(context: &Context, options: &Options, mut format_row: F) -> String
 where
     F: FnMut(&str, &str) -> String,
 {
@@ -64,7 +67,7 @@ where
         .collect()
 }
 
-fn render_aliases<F>(context: &Context, options: &GlobalOptions, mut format_row: F) -> String
+fn render_aliases<F>(context: &Context, options: &Options, mut format_row: F) -> String
 where
     F: FnMut(&str, &str) -> String,
 {
@@ -76,7 +79,7 @@ where
         .collect()
 }
 
-fn render_functions<F>(context: &Context, options: &GlobalOptions, mut format_row: F) -> String
+fn render_functions<F>(context: &Context, options: &Options, mut format_row: F) -> String
 where
     F: FnMut(&str, &str) -> String,
 {
