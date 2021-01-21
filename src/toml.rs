@@ -1,5 +1,5 @@
-use std::path::{Path, PathBuf};
 use std::io::{BufReader, Read};
+use std::path::{Path, PathBuf};
 use toml_edit::Document;
 
 pub fn get_document(path: &PathBuf) -> Document {
@@ -25,4 +25,3 @@ fn file_contents(path: &PathBuf, contents: String) -> Document {
         Document::new()
     })
 }
-

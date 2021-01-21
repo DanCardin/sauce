@@ -25,14 +25,30 @@ Core Goals:
 
 ## Installation
 
-### With Cargo
+### Install
+
+#### With Cargo
 
 - `cargo install sauce`
 
-### Download Release
+#### Download Release
 
 - Download Linux/Mac binary from
   [Releases](https://github.com/DanCardin/sauce/releases)
+
+### Setup
+
+Loading things into the environment requires a minimal amount of shell
+code to be executed, so after installing the binary (suggestion below),
+you will need to add `eval "$(sauce shell init)"` to your `.bashrc`,
+`.zshrc`, etc.
+
+Currently explicitly supported shells include: `zsh` and `bash`. The
+scaffolding exists to support other shells, which should make supporting
+other common shells that might require `"$SHELL"` specific behavior.
+
+When one of the supported shells is not detected, behavior falls back to
+the `bash` implementation.
 
 ## Example Workflow
 
