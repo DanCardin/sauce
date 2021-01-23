@@ -7,9 +7,9 @@ use crate::option::Options;
 
 #[derive(Debug)]
 pub struct Context {
-    home: PathBuf,
-    data_dir: PathBuf,
-    path: PathBuf,
+    pub home: PathBuf,
+    pub data_dir: PathBuf,
+    pub path: PathBuf,
     pub sauce_path: PathBuf,
 }
 
@@ -61,5 +61,16 @@ impl Context {
             .into_iter()
             .rev()
             .collect()
+    }
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self {
+            home: PathBuf::new(),
+            data_dir: PathBuf::new(),
+            path: PathBuf::new(),
+            sauce_path: PathBuf::new(),
+        }
     }
 }

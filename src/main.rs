@@ -110,7 +110,7 @@ fn main() -> Result<()> {
         }
         None => {
             let saucefile = Saucefile::read(&context);
-            shell::actions::execute(shell_kind, saucefile, &mut output, &options)
+            shell::actions::execute(shell_kind, saucefile, &mut output, &options, opts.autoload)
         }
     };
 
