@@ -210,9 +210,11 @@ You can additionally/alternatively omit `autoload` from the global
 config, and instead opt to only include it in the saucefile for a given
 directory i.e.
 
-  # ~/.local/share/sauce/work/example.toml
-  [settings]
-  autoload = true
+```toml
+# ~/.local/share/sauce/work/example.toml
+[settings]
+autoload = true
+```
 
 Which allows you to globally opt in, globally opt out, locally opt in,
 or locally opt out.
