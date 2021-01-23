@@ -1,4 +1,4 @@
-use crate::shell::utilities::escape;
+use crate::shell::utilities::{escape, qualify_binary_path};
 use crate::shell::Shell;
 
 pub struct Bash;
@@ -10,12 +10,9 @@ impl Shell for Bash {
 
     fn init(&self, binary: &str, _autoload: bool) -> String {
         format!(
-            r#"
-            sauce() {{
-                eval "$(command {} "$@")"
-            }}
-            "#,
+            r#"function {0} {{ eval "$(command {1} "$@")" }}"#,
             binary,
+            qualify_binary_path(binary)
         )
     }
 

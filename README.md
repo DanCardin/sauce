@@ -23,33 +23,6 @@ Core Goals:
 - Store all data centrally, not relative to the directory being sauced
 - Cascade data from parent directories downwards
 
-## Installation
-
-### Install
-
-#### With Cargo
-
-- `cargo install sauce`
-
-#### Download Release
-
-- Download Linux/Mac binary from
-  [Releases](https://github.com/DanCardin/sauce/releases)
-
-### Setup
-
-Loading things into the environment requires a minimal amount of shell
-code to be executed, so after installing the binary (suggestion below),
-you will need to add `eval "$(sauce shell init)"` to your `.bashrc`,
-`.zshrc`, etc.
-
-Currently explicitly supported shells include: `zsh` and `bash`. The
-scaffolding exists to support other shells, which should make supporting
-other common shells that might require `"$SHELL"` specific behavior.
-
-When one of the supported shells is not detected, behavior falls back to
-the `bash` implementation.
-
 ## Example Workflow
 
 ``` bash
@@ -78,6 +51,33 @@ Sourced ~/.local/share/sauce/foo/bar.toml
 AWS_PROFILE=foo
 foo=bar
 ```
+
+## Installation
+
+### Install
+
+#### With Cargo
+
+- `cargo install sauce`
+
+#### Download Release
+
+- Download Linux/Mac binary from
+  [Releases](https://github.com/DanCardin/sauce/releases)
+
+### Setup
+
+Loading things into the environment requires a minimal amount of shell
+code to be executed, so after installing the binary (suggestion below),
+you will need to add `eval "$(sauce shell init)"` to your `.bashrc`,
+`.zshrc`, etc.
+
+Currently explicitly supported shells include: `zsh` and `bash`. The
+scaffolding exists to support other shells, which should make supporting
+other common shells that might require `"$SHELL"` specific behavior.
+
+When one of the supported shells is not detected, behavior falls back to
+the `bash` implementation.
 
 ## Targets
 
@@ -184,12 +184,97 @@ which might be important given that there can be overlap between
 targets. Targets are separated from their search term by `:`,
 i.e. `--glob env:database*,function:work-*`.
 
+## Settings
+
+### direnv-like automatic execution of `sauce` on `cd`
+
+`sauce` loads configuration from `$XDG_CONFIG_HOME/sauce.toml`, and so
+generally this will be `~/.config/sauce.toml`.
+
+By default this feature is off (given that it changes the shell
+generated on `sauce shell init` and causes it to be executed on every
+`cd`).
+
+To enable, add:
+
+``` toml
+# Enables the shell hook which makes this feature possible.
+# You must start a new shell before autoload will work.
+autoload-hook = true
+
+# Enables the feature itself (globally).
+autoload = true
+```
+
+You can additionally/alternatively omit `autoload` from the global
+config, and instead opt to only include it in the saucefile for a given
+directory i.e.
+
+  # ~/.local/share/sauce/work/example.toml
+  [settings]
+  autoload = true
+
+Which allows you to globally opt in, globally opt out, locally opt in,
+or locally opt out.
+
+## Alternatives
+
+Why would you choose to use `sauce` over certain alternatives? `sauce`
+**does** have significant conceptual feature overlap with, in
+particular, `direnv`, but the additional features may make it worth
+using `sauce` instead!
+
+Features which distinguish `sauce` from **all** the below alternatives
+
+- Cascading loading of values from upstream directories
+
+  This makes it easier to compose targets (env vars, aliases, and shell
+  functions) among various locations, likely by utilizing the natural
+  directory structure you might already have.
+
+- Central storage of the values
+
+  The original motivation for central storage was due to getting a new
+  computer and needing to comb through 50 repos to find all the random
+  `.env` files littered all over the place to make sure nothing got left
+  behind.
+
+  In practice, I’ve found that there are numerous problems with storing
+  your (equivalent to `.env`/`.envrc` files locally to the repo. In fact
+  `direnv` added a whole additional feature `direnv allow` to work
+  around that fact.
+
+### `dotenv`
+
+`dotenv` is the more obvious of the two, which is specifically for the
+loading of environment variables, which is essentially the primary
+usecase of `sauce`.
+
+I find choice of `toml` files for `sauce`, while not necessarily
+important to the actual featureset of `sauce`, to be useful because it
+supports multiline strings.
+
+The main advantage, is `sauce --as <context>`. In order to reproduce
+this behavior, you need multiple dotenv files, (with all common values
+duplicated, or contained in yet another file).
+
+### `direnv`
+
+`direnv` may be less obvious, but given that it executes user-supplied
+shell code, directly, on `cd`, it can essentially do anything that
+`sauce` can do.
+
+The advantage, lies in the fact that `sauce` is specifically tailored to
+the usecases documented above. That means, it’s just a lot easier to get
+the behaviors of `sauce` compared to writing the shell code (for each
+project) which would enable things like `sauce --as prod` or
+`sauce --glob database*`.
+
 ## Planned Work
 
-- Ability to use shell hooks to automatically perform i.e. `sauce` on
-  `cd` (i.e. direnv)
 - Ability to set config from cli
-- Local settings inside the local saucefile
+- Autoload in bash
+- Support fish shell
 - refactor into thin cli app + library
 - “strategies” (nested shell vs in-place alterations of the current
   shell)
@@ -201,3 +286,20 @@ i.e. `--glob env:database*,function:work-*`.
 - more targets: arbitrary key-value pairs
 - pipe `sauce show` to a pager when beyond a full terminal height
 - colorized output
+
+## Local development
+
+For local development, it can be useful to enable the `--feature dev`.
+This alters the behavior so that the shell hook(s) point to the absolute
+location of the debug build.
+
+An example alias that might be helpful could be:
+
+``` toml
+[alias]
+build = 'cargo build --features dev && eval "$(./target/debug/sauce shell init)"'
+```
+
+At which point, you’re a quick `build` away from being able to `cd`
+around to test `sauce`, while always pointing at your project version of
+`sauce` for the current shell.

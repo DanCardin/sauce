@@ -1,4 +1,4 @@
-use crate::shell::utilities::escape;
+use crate::shell::utilities::{escape, qualify_binary_path};
 use crate::shell::Shell;
 
 pub struct Zsh;
@@ -12,13 +12,9 @@ impl Shell for Zsh {
         let mut parts = Vec::new();
 
         parts.push(format!(
-            r#"function {0} {{ eval "$(command {1}{0} "$@")" }}"#,
+            r#"function {0} {{ eval "$(command {1} "$@")" }}"#,
             binary,
-            if cfg!(debug_assertions) {
-                "./target/debug/"
-            } else {
-                ""
-            }
+            qualify_binary_path(binary)
         ));
 
         if autoload_hook {

@@ -1,6 +1,6 @@
 [package]
 name = 'sauce'
-version = '0.3.0'
+version = '0.4.0'
 authors = ['Dan Cardin <ddcardin@gmail.com>']
 edition = '2018'
 description = 'A tool for managing directory-specific state.'
@@ -15,6 +15,11 @@ keywords = [
 ]
 categories = ['command-line-utilities']
 license = "Apache-2.0"
+
+[features]
+default = []
+
+dev = []
 
 [dependencies]
 anyhow = '1.0.35'

@@ -11,6 +11,19 @@ pub fn get_binary() -> String {
     clap::crate_name!().to_string()
 }
 
+pub fn qualify_binary_path(binary: &str) -> String {
+    let prefix = if cfg!(dev) {
+        std::env::current_dir()
+            .unwrap()
+            .join("target/debug/")
+            .to_string_lossy()
+            .to_string()
+    } else {
+        "".to_string()
+    };
+    format!("{}{}", prefix, binary)
+}
+
 pub fn detect() -> Box<dyn Shell> {
     let shell = std::env::var_os("SHELL");
     let shell = shell

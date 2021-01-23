@@ -13,53 +13,68 @@ pub fn edit(shell: &dyn Shell, context: Context, output: &mut Output) {
 
 pub fn init(shell: &dyn Shell, output: &mut Output, options: &Options) {
     let binary = get_binary();
-    let result = shell.init(&binary, options.settings.autoload_hook);
+    let result = shell.init(&binary, options.settings.autoload_hook.unwrap_or(false));
     output.push_result(result);
 }
 
-pub fn clear(shell: &dyn Shell, context: Context, output: &mut Output, options: &Options) {
+pub fn clear(shell: &dyn Shell, mut saucefile: Saucefile, output: &mut Output, options: &Options) {
     output
-        .with_result(render_vars(&context, options, |k, _| shell.unset_var(k)))
-        .with_result(render_aliases(&context, options, |k, _| {
+        .with_result(render_vars(&mut saucefile, options, |k, _| {
+            shell.unset_var(k)
+        }))
+        .with_result(render_aliases(&mut saucefile, options, |k, _| {
             shell.unset_alias(k)
         }))
-        .with_message(render_functions(&context, options, |k, _| {
+        .with_message(render_functions(&mut saucefile, options, |k, _| {
             shell.unset_function(k)
         }))
         .with_message("Cleared your sauce");
 }
 
-pub fn show(shell: &dyn Shell, context: Context, output: &mut Output, options: &Options) {
+pub fn show(shell: &dyn Shell, mut saucefile: Saucefile, output: &mut Output, options: &Options) {
     output
-        .with_message(render_vars(&context, options, |k, v| shell.set_var(k, v)))
-        .with_message(render_aliases(&context, options, |k, v| {
+        .with_message(render_vars(&mut saucefile, options, |k, v| {
+            shell.set_var(k, v)
+        }))
+        .with_message(render_aliases(&mut saucefile, options, |k, v| {
             shell.set_alias(k, v)
         }))
-        .with_message(render_functions(&context, options, |k, v| {
+        .with_message(render_functions(&mut saucefile, options, |k, v| {
             shell.set_function(k, v)
         }));
 }
 
-pub fn execute(shell: &dyn Shell, context: Context, output: &mut Output, options: &Options) {
-    if !options.settings.autoload {
+pub fn execute(
+    shell: &dyn Shell,
+    mut saucefile: Saucefile,
+    output: &mut Output,
+    options: &Options,
+) {
+    if !saucefile
+        .settings()
+        .resolve_precedence(&options.settings)
+        .autoload
+    {
         return;
     }
     output
-        .with_result(render_vars(&context, options, |k, v| shell.set_var(k, v)))
-        .with_result(render_aliases(&context, options, |k, v| {
+        .with_result(render_vars(&mut saucefile, options, |k, v| {
+            shell.set_var(k, v)
+        }))
+        .with_result(render_aliases(&mut saucefile, options, |k, v| {
             shell.set_alias(k, v)
         }))
-        .with_result(render_functions(&context, options, |k, v| {
+        .with_result(render_functions(&mut saucefile, options, |k, v| {
             shell.set_function(k, v)
         }))
-        .with_message(format!("Sourced {}", context.sauce_path.to_string_lossy()));
+        .with_message(format!("Sourced {}", saucefile.path.to_string_lossy()));
 }
 
-fn render_vars<F>(context: &Context, options: &Options, mut format_row: F) -> String
+fn render_vars<F>(saucefile: &mut Saucefile, options: &Options, mut format_row: F) -> String
 where
     F: FnMut(&str, &str) -> String,
 {
-    Saucefile::read(context)
+    saucefile
         .vars(options)
         .iter()
         .map(|(k, v)| format_row(k, v))
@@ -67,11 +82,11 @@ where
         .collect()
 }
 
-fn render_aliases<F>(context: &Context, options: &Options, mut format_row: F) -> String
+fn render_aliases<F>(saucefile: &mut Saucefile, options: &Options, mut format_row: F) -> String
 where
     F: FnMut(&str, &str) -> String,
 {
-    Saucefile::read(context)
+    saucefile
         .aliases(options)
         .iter()
         .map(|(k, v)| format_row(k, v))
@@ -79,11 +94,11 @@ where
         .collect()
 }
 
-fn render_functions<F>(context: &Context, options: &Options, mut format_row: F) -> String
+fn render_functions<F>(saucefile: &mut Saucefile, options: &Options, mut format_row: F) -> String
 where
     F: FnMut(&str, &str) -> String,
 {
-    Saucefile::read(context)
+    saucefile
         .functions(options)
         .iter()
         .map(|(k, v)| format_row(k, v))

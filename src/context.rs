@@ -18,7 +18,11 @@ impl Context {
         let path = path.into().canonicalize()?;
 
         let home = home_dir()?;
-        let data_dir = options.settings.data_dir.clone();
+        let data_dir = options
+            .settings
+            .data_dir
+            .clone()
+            .unwrap_or_else(|| "~/.local/share/sauce".into());
 
         let relative_path = path.strip_prefix(&home)?;
         let sauce_path = data_dir.join(relative_path).with_extension("toml");

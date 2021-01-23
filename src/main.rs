@@ -14,6 +14,7 @@ use crate::context::Context;
 use crate::option::Options;
 use anyhow::Result;
 use output::Output;
+use saucefile::Saucefile;
 use settings::Settings;
 use std::io::Write;
 
@@ -97,13 +98,20 @@ fn main() -> Result<()> {
             crate::commands::shell::run(shell_kind, cmd, &mut output, &options)
         }
         Some(SubCommand::New(cmd)) => crate::commands::new::new(context, cmd, &mut output),
-        Some(SubCommand::Edit) => shell::actions::edit(shell_kind, context, &mut output),
         Some(SubCommand::Set(cmd)) => crate::commands::set::set(context, cmd, &mut output),
-        Some(SubCommand::Show) => shell::actions::show(shell_kind, context, &mut output, &options),
-        Some(SubCommand::Clear) => {
-            shell::actions::clear(shell_kind, context, &mut output, &options)
+        Some(SubCommand::Edit) => shell::actions::edit(shell_kind, context, &mut output),
+        Some(SubCommand::Show) => {
+            let saucefile = Saucefile::read(&context);
+            shell::actions::show(shell_kind, saucefile, &mut output, &options)
         }
-        None => shell::actions::execute(shell_kind, context, &mut output, &options),
+        Some(SubCommand::Clear) => {
+            let saucefile = Saucefile::read(&context);
+            shell::actions::clear(shell_kind, saucefile, &mut output, &options)
+        }
+        None => {
+            let saucefile = Saucefile::read(&context);
+            shell::actions::execute(shell_kind, saucefile, &mut output, &options)
+        }
     };
 
     let out = std::io::stderr();

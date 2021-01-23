@@ -1,26 +1,30 @@
-use crate::context::Context;
 use crate::option::Options;
+use crate::{context::Context, settings::Settings};
 use anyhow::Result;
 use indexmap::IndexMap;
 use itertools::iproduct;
 use toml_edit::Table;
 
 use crate::toml::get_document;
-use std::fs::OpenOptions;
 use std::io::BufWriter;
 use std::io::Write;
 use std::str::FromStr;
+use std::{fs::OpenOptions, path::PathBuf};
 use toml_edit::{value, Document, Item, Value};
 
 #[derive(Debug)]
 pub struct Saucefile {
+    pub path: PathBuf,
     pub ancestors: Vec<Document>,
     pub document: Document,
 }
 
 impl Saucefile {
-    pub fn read(context: &Context) -> Saucefile {
-        let mut base_sf: Saucefile = Self::default();
+    pub fn read(context: &Context) -> Self {
+        let mut base_sf = Self {
+            path: context.sauce_path.clone(),
+            ..Default::default()
+        };
 
         let paths = context.cascade_paths();
         let mut paths = paths.iter().peekable();
@@ -38,6 +42,10 @@ impl Saucefile {
             }
         }
         base_sf
+    }
+
+    pub fn settings(&self) -> Settings {
+        Settings::from_document(&self.document, None)
     }
 
     pub fn set_var(&mut self, name: &str, raw_value: &str) {
@@ -132,6 +140,7 @@ impl Saucefile {
 impl Default for Saucefile {
     fn default() -> Self {
         Self {
+            path: PathBuf::new(),
             document: Document::new(),
             ancestors: Vec::new(),
         }
