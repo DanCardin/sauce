@@ -1,22 +1,12 @@
 use anyhow::Result;
-use std::{fmt::Display, path::PathBuf};
+use std::{fmt::Display, fs::OpenOptions, io::BufWriter, path::PathBuf};
 
 use crate::toml::get_document;
-use etcetera::app_strategy::AppStrategy;
-use etcetera::app_strategy::AppStrategyArgs;
-use etcetera::app_strategy::Xdg;
+use std::io::Write;
 use toml_edit::{Document, Item, Value};
 
 #[derive(Debug)]
-pub struct Settings {
-    pub data_dir: Option<PathBuf>,
-    pub autoload_hook: Option<bool>,
-    pub autoload: Option<bool>,
-}
-
-#[derive(Debug)]
 pub struct RealizedSettings {
-    pub data_dir: Option<PathBuf>,
     pub autoload_hook: bool,
     pub autoload: bool,
 }
@@ -24,36 +14,34 @@ pub struct RealizedSettings {
 impl Default for RealizedSettings {
     fn default() -> Self {
         Self {
-            data_dir: None,
             autoload_hook: false,
             autoload: false,
         }
     }
 }
 
-impl Settings {
-    pub fn load() -> Result<Self> {
-        let strat_args = AppStrategyArgs {
-            top_level_domain: "com".to_string(),
-            author: "dancardin".to_string(),
-            app_name: "sauce".to_string(),
-        };
-        let strategy = Xdg::new(strat_args)?;
-        let data_dir = strategy.data_dir();
+#[derive(Debug)]
+pub struct Settings {
+    pub file: PathBuf,
+    pub autoload_hook: Option<bool>,
+    pub autoload: Option<bool>,
+}
 
-        let config_dir = strategy.config_dir().with_extension("toml");
-        let document = get_document(&config_dir);
-        Ok(Self::from_document(&document, Some(data_dir)))
+impl Settings {
+    pub fn load(config_dir: &PathBuf) -> Result<Self> {
+        let file = config_dir.with_extension("toml");
+        let document = get_document(&file);
+        Ok(Self::from_document(file, &document))
     }
 
-    pub fn from_document(document: &Document, data_dir: Option<PathBuf>) -> Self {
+    pub fn from_document(file: PathBuf, document: &Document) -> Self {
         let general = &document["settings"];
 
         let autoload_hook = Setting::new(general, "autoload-hook").as_bool();
         let autoload = Setting::new(general, "autoload").as_bool();
 
         Self {
-            data_dir,
+            file,
             autoload_hook,
             autoload,
         }
@@ -73,6 +61,29 @@ impl Settings {
             }
         }
         default
+    }
+
+    pub fn set_values<T: AsRef<str>>(&self, pairs: &[(T, T)]) -> Result<()> {
+        let mut document = get_document(&self.file);
+        let settings = &mut document["settings"];
+
+        for pair in pairs {
+            let (setting, value) = pair;
+            let toml_value = toml_edit::value(value.as_ref().parse::<Value>()?);
+            match setting.as_ref() {
+                "autoload" => settings["autoload"] = toml_value,
+                "autoload-hook" => settings["autoload-hook"] = toml_value,
+                unknown_setting => eprintln!("Unrecognized config name '{}'", unknown_setting),
+            }
+        }
+
+        let file = OpenOptions::new().write(true).open(&self.file)?;
+
+        let mut buffer = BufWriter::new(file);
+        buffer.write_all(document.to_string().as_ref())?;
+        buffer.flush()?;
+
+        Ok(())
     }
 }
 
@@ -125,7 +136,7 @@ impl<'a> Setting<'a> {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            data_dir: None,
+            file: PathBuf::new(),
             autoload_hook: None,
             autoload: None,
         }
@@ -143,7 +154,7 @@ mod tests {
         fn it_loads_from_empty_document() {
             let toml = r#""#;
             let doc = toml.parse::<Document>().expect("invalid doc");
-            let settings = Settings::from_document(&doc, None);
+            let settings = Settings::from_document(PathBuf::new(), &doc);
             assert_eq!(settings.autoload, None);
             assert_eq!(settings.autoload_hook, None);
         }
@@ -156,7 +167,7 @@ mod tests {
                 autoload-hook = true
             "#;
             let doc = toml.parse::<Document>().expect("invalid doc");
-            let settings = Settings::from_document(&doc, None);
+            let settings = Settings::from_document(PathBuf::new(), &doc);
             assert_eq!(settings.autoload, Some(true));
             assert_eq!(settings.autoload_hook, Some(true));
         }
@@ -185,7 +196,7 @@ mod tests {
                 autoload-hook = true
                 "#;
             let doc = toml.parse::<Document>().expect("invalid doc");
-            let global = Settings::from_document(&doc, None);
+            let global = Settings::from_document(PathBuf::new(), &doc);
 
             let saucefile_settings = Settings::default();
 
@@ -204,7 +215,7 @@ mod tests {
                 autoload-hook = true
                 "#;
             let doc = toml.parse::<Document>().expect("invalid doc");
-            let saucefile_settings = Settings::from_document(&doc, None);
+            let saucefile_settings = Settings::from_document(PathBuf::new(), &doc);
 
             let settings = saucefile_settings.resolve_precedence(&global);
             assert_eq!(settings.autoload, true);
@@ -219,7 +230,7 @@ mod tests {
                 autoload-hook = true
                 "#;
             let doc = toml.parse::<Document>().expect("invalid doc");
-            let global = Settings::from_document(&doc, None);
+            let global = Settings::from_document(PathBuf::new(), &doc);
 
             let toml = r#"
                 [settings]
@@ -227,7 +238,7 @@ mod tests {
                 autoload-hook = false
                 "#;
             let doc = toml.parse::<Document>().expect("invalid doc");
-            let saucefile_settings = Settings::from_document(&doc, None);
+            let saucefile_settings = Settings::from_document(PathBuf::new(), &doc);
 
             let settings = saucefile_settings.resolve_precedence(&global);
             assert_eq!(settings.autoload, true);

@@ -1,5 +1,6 @@
 use crate::option::Options;
-use crate::{context::Context, settings::Settings};
+use crate::settings::Settings;
+use crate::Context;
 use anyhow::Result;
 use indexmap::IndexMap;
 use itertools::iproduct;
@@ -45,7 +46,7 @@ impl Saucefile {
     }
 
     pub fn settings(&self) -> Settings {
-        Settings::from_document(&self.document, None)
+        Settings::from_document(self.path.clone(), &self.document)
     }
 
     pub fn set_var(&mut self, name: &str, raw_value: &str) {

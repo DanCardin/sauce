@@ -1,9 +1,7 @@
 use glob::Pattern;
 
-use crate::settings::Settings;
-
+#[derive(Debug)]
 pub struct Options<'a> {
-    pub settings: Settings,
     pub as_: Option<&'a str>,
     pub globs: Option<Vec<(Option<&'a str>, &'a str)>>,
     pub filters: Option<Vec<(Option<&'a str>, &'a str)>>,
@@ -13,7 +11,6 @@ pub struct Options<'a> {
 impl<'a> Default for Options<'a> {
     fn default() -> Self {
         Self {
-            settings: Settings::default(),
             as_: None,
             globs: None,
             filters: None,
@@ -24,7 +21,6 @@ impl<'a> Default for Options<'a> {
 
 impl<'a> Options<'a> {
     pub fn new(
-        settings: Settings,
         glob: Option<&'a str>,
         filter: Option<&'a str>,
         as_: Option<&'a str>,
@@ -34,7 +30,6 @@ impl<'a> Options<'a> {
         let filters = parse_match_option(filter);
 
         Self {
-            settings,
             as_,
             path,
             globs,
