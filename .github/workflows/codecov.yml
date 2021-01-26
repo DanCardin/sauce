@@ -30,11 +30,12 @@ jobs:
           override: true
 
       - name: Install grcov
-        uses: actions-rs/install@v0.1
-        with:
-          crate: grcov
-          version: latest
-          use-tool-cache: true
+        env:
+          LINK: https://github.com/mozilla/grcov/releases/download
+          GRCOV_VERSION: 0.7.1
+        run: |
+          curl -L "$LINK/v$GRCOV_VERSION/grcov-linux-x86_64.tar.bz2" |
+          tar xj -C $HOME/.cargo/bin
 
       - name: Test
         uses: actions-rs/cargo@v1
@@ -49,6 +50,8 @@ jobs:
       - name: Generate coverage data
         id: grcov
         uses: actions-rs/grcov@v0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v2
         with:
