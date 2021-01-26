@@ -1,0 +1,8 @@
+[environment]
+TEST = "example"
+
+[alias]
+foo = "git"
+
+[function]
+meow = 'echo "$@"'
