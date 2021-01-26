@@ -1,23 +1,24 @@
-use crate::context::Context;
 use crate::option::Options;
 use crate::output::Output;
 use crate::saucefile::Saucefile;
 use crate::shell::utilities::get_binary;
 use crate::shell::Shell;
+use crate::Context;
 
-pub fn edit(shell: &dyn Shell, context: Context, output: &mut Output) {
+pub fn edit(context: &Context, shell: &dyn Shell, output: &mut Output) {
     let path = &context.sauce_path.to_string_lossy();
     let result = shell.edit(path);
     output.push_result(result);
 }
 
-pub fn init(shell: &dyn Shell, output: &mut Output, options: &Options) {
+pub fn init(context: &Context, shell: &dyn Shell, output: &mut Output) {
     let binary = get_binary();
-    let result = shell.init(&binary, options.settings.autoload_hook.unwrap_or(false));
+    let result = shell.init(&binary, context.settings.autoload_hook.unwrap_or(false));
     output.push_result(result);
 }
 
-pub fn clear(shell: &dyn Shell, mut saucefile: Saucefile, output: &mut Output, options: &Options) {
+pub fn clear(context: &Context, shell: &dyn Shell, mut saucefile: Saucefile, output: &mut Output) {
+    let options = &context.options;
     output
         .with_result(render_vars(&mut saucefile, options, |k, _| {
             shell.unset_var(k)
@@ -31,7 +32,8 @@ pub fn clear(shell: &dyn Shell, mut saucefile: Saucefile, output: &mut Output, o
         .with_message("Cleared your sauce");
 }
 
-pub fn show(shell: &dyn Shell, mut saucefile: Saucefile, output: &mut Output, options: &Options) {
+pub fn show(context: &Context, shell: &dyn Shell, mut saucefile: Saucefile, output: &mut Output) {
+    let options = &context.options;
     output
         .with_message(render_vars(&mut saucefile, options, |k, v| {
             shell.set_var(k, v)
@@ -45,19 +47,20 @@ pub fn show(shell: &dyn Shell, mut saucefile: Saucefile, output: &mut Output, op
 }
 
 pub fn execute(
+    context: &Context,
     shell: &dyn Shell,
     mut saucefile: Saucefile,
     output: &mut Output,
-    options: &Options,
     autoload_flag: bool,
 ) {
     // The `autoload_flag` indicates that the "context" of the execution is happening during
     // an autoload, i.e. `cd`. It's the precondition for whether we need to check the settings to
     // see whether we **actually** should perform the autoload, or exit early.
+    let options = &context.options;
     if autoload_flag
         && !saucefile
             .settings()
-            .resolve_precedence(&options.settings)
+            .resolve_precedence(&context.settings)
             .autoload
     {
         return;
@@ -170,7 +173,7 @@ mod tests {
                 sauce_path: Path::new("foo/bar").into(),
                 ..Context::default()
             };
-            edit(&shell, context, &mut output);
+            edit(&context, &shell, &mut output);
             assert_eq!(output.result(), "edit foo/bar\n");
             assert_eq!(output.message(), "\n");
         }
@@ -185,9 +188,8 @@ mod tests {
         fn it_defaults() {
             let shell = TestShell {};
             let mut output = Output::default();
-            let options = Options::default();
-
-            init(&shell, &mut output, &options);
+            let context = Context::default();
+            init(&context, &shell, &mut output);
 
             assert_eq!(output.result(), "sauce\n");
             assert_eq!(output.message(), "\n");
@@ -197,11 +199,11 @@ mod tests {
         fn it_emits_autoload() {
             let shell = TestShell {};
             let mut output = Output::default();
-            let mut options = Options::default();
+            let mut context = Context::default();
 
-            options.settings.autoload_hook = Some(true);
+            context.settings.autoload_hook = Some(true);
 
-            init(&shell, &mut output, &options);
+            init(&context, &shell, &mut output);
 
             assert_eq!(output.result(), "sauce --autoload\n");
             assert_eq!(output.message(), "\n");
@@ -217,13 +219,13 @@ mod tests {
         fn it_clears() {
             let shell = TestShell {};
             let mut output = Output::default();
-            let options = Options::default();
+            let context = Context::default();
             let mut saucefile = Saucefile::default();
             saucefile.set_var("var", "varvalue");
             saucefile.set_var("alias", "aliasvalue");
             saucefile.set_var("function", "functionvalue");
 
-            clear(&shell, saucefile, &mut output, &options);
+            clear(&context, &shell, saucefile, &mut output);
 
             assert_eq!(
                 output.result(),
@@ -242,13 +244,13 @@ mod tests {
         fn it_shows() {
             let shell = TestShell {};
             let mut output = Output::default();
-            let options = Options::default();
+            let context = Context::default();
             let mut saucefile = Saucefile::default();
             saucefile.set_var("var", "varvalue");
             saucefile.set_var("alias", "aliasvalue");
             saucefile.set_var("function", "functionvalue");
 
-            show(&shell, saucefile, &mut output, &options);
+            show(&context, &shell, saucefile, &mut output);
 
             assert_eq!(output.result(), "\n");
             assert_eq!(
@@ -267,13 +269,13 @@ mod tests {
         fn it_executes() {
             let shell = TestShell {};
             let mut output = Output::default();
-            let options = Options::default();
+            let context = Context::default();
             let mut saucefile = Saucefile::default();
             saucefile.set_var("var", "varvalue");
             saucefile.set_var("alias", "aliasvalue");
             saucefile.set_var("function", "functionvalue");
 
-            execute(&shell, saucefile, &mut output, &options, false);
+            execute(&context, &shell, saucefile, &mut output, false);
 
             assert_eq!(
                 output.result(),
@@ -286,10 +288,10 @@ mod tests {
         fn it_doesnt_execute_with_autoload_flag_and_its_disabled() {
             let shell = TestShell {};
             let mut output = Output::default();
-            let options = Options::default();
+            let context = Context::default();
             let saucefile = Saucefile::default();
 
-            execute(&shell, saucefile, &mut output, &options, true);
+            execute(&context, &shell, saucefile, &mut output, true);
 
             assert_eq!(output.result(), "\n");
             assert_eq!(output.message(), "\n");

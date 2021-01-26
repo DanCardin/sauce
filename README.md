@@ -210,7 +210,7 @@ You can additionally/alternatively omit `autoload` from the global
 config, and instead opt to only include it in the saucefile for a given
 directory i.e.
 
-```toml
+``` toml
 # ~/.local/share/sauce/work/example.toml
 [settings]
 autoload = true
@@ -274,10 +274,8 @@ project) which would enable things like `sauce --as prod` or
 
 ## Planned Work
 
-- Ability to set config from cli
 - Autoload in bash
 - Support fish shell
-- refactor into thin cli app + library
 - “strategies” (nested shell vs in-place alterations of the current
   shell)
   - Given strategies, the ability to unset/revert alterations in a more

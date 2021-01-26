@@ -1,6 +1,7 @@
-pub mod actions;
-pub mod kinds;
-pub mod utilities;
+mod actions;
+pub mod context;
+mod kinds;
+mod utilities;
 
 pub use kinds::Bash;
 pub use kinds::Zsh;
