@@ -1,7 +1,6 @@
 use crate::cli::utilities::get_input;
 use crate::option::Options;
 use crate::output::Output;
-use crate::saucefile::Saucefile;
 use crate::settings::Settings;
 use crate::shell::{self, Shell};
 use crate::Context;
@@ -65,37 +64,20 @@ pub fn match_subcommmand(
             };
         }
         Some(SubCommand::Config(cmd)) => {
-            let saucefile = Saucefile::read(&context);
-            context.set_config(saucefile, &cmd.values, cmd.global, &mut output);
+            context.set_config(&cmd.values, cmd.global, &mut output);
         }
         Some(SubCommand::New) => context.create_saucefile(&mut output),
-        Some(SubCommand::Set(cmd)) => {
-            let saucefile = Saucefile::read(&context);
-            match &cmd.kind {
-                SetKinds::Var(var) => {
-                    context.set_var(saucefile, &get_input(&var.values), &mut output)
-                }
-                SetKinds::Alias(alias) => {
-                    context.set_alias(saucefile, &get_input(&alias.values), &mut output)
-                }
-                SetKinds::Function(KeyValuePair { key, value }) => {
-                    context.set_function(saucefile, key, value, &mut output)
-                }
+        Some(SubCommand::Set(cmd)) => match &cmd.kind {
+            SetKinds::Var(var) => context.set_var(&get_input(&var.values), &mut output),
+            SetKinds::Alias(alias) => context.set_alias(&get_input(&alias.values), &mut output),
+            SetKinds::Function(KeyValuePair { key, value }) => {
+                context.set_function(key, value, &mut output)
             }
-        }
+        },
         Some(SubCommand::Edit) => context.edit_saucefile(shell_kind, &mut output),
-        Some(SubCommand::Show) => {
-            let saucefile = Saucefile::read(&context);
-            context.show(shell_kind, saucefile, &mut output)
-        }
-        Some(SubCommand::Clear) => {
-            let saucefile = Saucefile::read(&context);
-            context.clear(shell_kind, saucefile, &mut output)
-        }
-        None => {
-            let saucefile = Saucefile::read(&context);
-            context.execute(shell_kind, saucefile, &mut output, autoload)
-        }
+        Some(SubCommand::Show) => context.show(shell_kind, &mut output),
+        Some(SubCommand::Clear) => context.clear(shell_kind, &mut output),
+        None => context.execute(shell_kind, &mut output, autoload),
     };
 
     output

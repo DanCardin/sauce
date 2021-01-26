@@ -64,6 +64,10 @@ impl<'a> Context<'a> {
         }
     }
 
+    fn saucefile(&self) -> Saucefile {
+        Saucefile::read(self)
+    }
+
     pub fn init_shell(&self, shell_kind: &dyn Shell, output: &mut Output) {
         actions::init(self, shell_kind, output)
     }
@@ -94,22 +98,16 @@ impl<'a> Context<'a> {
         actions::edit(self, shell_kind, output);
     }
 
-    pub fn show(&self, shell_kind: &dyn Shell, saucefile: Saucefile, output: &mut Output) {
-        actions::show(self, shell_kind, saucefile, output);
+    pub fn show(&self, shell_kind: &dyn Shell, output: &mut Output) {
+        actions::show(self, shell_kind, self.saucefile(), output);
     }
 
-    pub fn clear(&self, shell_kind: &dyn Shell, saucefile: Saucefile, output: &mut Output) {
-        actions::clear(self, shell_kind, saucefile, output);
+    pub fn clear(&self, shell_kind: &dyn Shell, output: &mut Output) {
+        actions::clear(self, shell_kind, self.saucefile(), output);
     }
 
-    pub fn execute(
-        &self,
-        shell_kind: &dyn Shell,
-        saucefile: Saucefile,
-        output: &mut Output,
-        autoload: bool,
-    ) {
-        actions::execute(self, shell_kind, saucefile, output, autoload);
+    pub fn execute(&self, shell_kind: &dyn Shell, output: &mut Output, autoload: bool) {
+        actions::execute(self, shell_kind, self.saucefile(), output, autoload);
     }
 
     pub fn cascade_paths(&self) -> Vec<PathBuf> {
@@ -127,12 +125,8 @@ impl<'a> Context<'a> {
             .collect()
     }
 
-    pub fn set_var<T: AsRef<str>>(
-        &self,
-        mut saucefile: Saucefile,
-        values: &[T],
-        output: &mut Output,
-    ) {
+    pub fn set_var<T: AsRef<str>>(&self, values: &[T], output: &mut Output) {
+        let mut saucefile = self.saucefile();
         for values in values.iter() {
             let parts: Vec<&str> = values.as_ref().splitn(2, '=').collect();
             let var = parts[0];
@@ -147,12 +141,8 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn set_alias<T: AsRef<str>>(
-        &self,
-        mut saucefile: Saucefile,
-        values: &[T],
-        output: &mut Output,
-    ) {
+    pub fn set_alias<T: AsRef<str>>(&self, values: &[T], output: &mut Output) {
+        let mut saucefile = self.saucefile();
         for values in values.iter() {
             let parts: Vec<&str> = values.as_ref().splitn(2, '=').collect();
             let var = parts[0];
@@ -165,13 +155,8 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn set_function(
-        &self,
-        mut saucefile: Saucefile,
-        name: &str,
-        body: &str,
-        output: &mut Output,
-    ) {
+    pub fn set_function(&self, name: &str, body: &str, output: &mut Output) {
+        let mut saucefile = self.saucefile();
         saucefile.set_function(name, body);
         output.push_message(format!("Set '{}' to {}", name, body));
         if saucefile.write(self).is_err() {
@@ -179,13 +164,8 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn set_config<T: AsRef<str>>(
-        &self,
-        saucefile: Saucefile,
-        values: &[(T, T)],
-        global: bool,
-        output: &mut Output,
-    ) {
+    pub fn set_config<T: AsRef<str>>(&self, values: &[(T, T)], global: bool, output: &mut Output) {
+        let saucefile = self.saucefile();
         let result = if global {
             self.settings.set_values(&values)
         } else {
