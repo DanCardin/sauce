@@ -274,8 +274,6 @@ project) which would enable things like `sauce --as prod` or
 
 ## Planned Work
 
-- Autoload in bash
-- Support fish shell
 - “strategies” (nested shell vs in-place alterations of the current
   shell)
   - Given strategies, the ability to unset/revert alterations in a more

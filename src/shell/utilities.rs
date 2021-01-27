@@ -1,4 +1,7 @@
-use crate::shell::kinds::{Bash, Zsh};
+use crate::{
+    cli::shape::ShellName,
+    shell::kinds::{Bash, Fish, Zsh},
+};
 use std::env;
 
 use crate::shell::Shell;
@@ -13,7 +16,7 @@ pub fn get_binary() -> String {
 }
 
 pub fn qualify_binary_path(binary: &str) -> String {
-    let prefix = if cfg!(dev) {
+    let prefix = if cfg!(feature = "dev") {
         std::env::current_dir()
             .unwrap()
             .join("target/debug/")
@@ -25,14 +28,10 @@ pub fn qualify_binary_path(binary: &str) -> String {
     format!("{}{}", prefix, binary)
 }
 
-pub fn detect() -> Box<dyn Shell> {
-    if std::env::var_os("ZSH_VERSION").is_some() {
-        return Box::new(Zsh {});
+pub fn detect(shell_name: ShellName) -> Box<dyn Shell> {
+    match shell_name {
+        ShellName::Zsh => Box::new(Zsh {}),
+        ShellName::Fish => Box::new(Fish {}),
+        ShellName::Bash => Box::new(Bash {}),
     }
-
-    if std::env::var_os("BASH_VERSION").is_some() {
-        return Box::new(Bash {});
-    }
-
-    return Box::new(Bash {});
 }

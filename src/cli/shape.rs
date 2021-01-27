@@ -1,10 +1,15 @@
 use clap::Clap;
-use std::io::Write;
+use std::{io::Write, str::FromStr};
 
 /// Sauce!
 #[derive(Clap, Debug)]
 #[clap(version, author)]
 pub struct CliOptions {
+    /// Determines the shell behavior, this flag should always be set automatically
+    /// by the shell hook. Valid options are: zsh, fish, bash
+    #[clap(long)]
+    pub shell: ShellName,
+
     /// Sets a custom config file. Could have been an Option<T> with no default too
     #[clap(short, long)]
     pub config: Option<String>,
@@ -50,6 +55,29 @@ impl CliOptions {
             handle.flush().unwrap();
             std::process::exit(1)
         })
+    }
+}
+
+#[derive(Debug)]
+pub enum ShellName {
+    Zsh,
+    Fish,
+    Bash,
+}
+
+impl FromStr for ShellName {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, String> {
+        match s {
+            "zsh" => Ok(Self::Zsh),
+            "bash" => Ok(Self::Bash),
+            "fish" => Ok(Self::Fish),
+            unhandled => Err(format!(
+                "Unrecognized shell '{}'. Valid options are: zsh, fish, bash",
+                unhandled
+            )),
+        }
     }
 }
 

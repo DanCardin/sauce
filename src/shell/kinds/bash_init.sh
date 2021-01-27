@@ -1,3 +1,3 @@
 function {0} {{
-  eval "$(command {1} "$@")"
+  eval "$(command {1} --shell bash "$@")"
 }}
