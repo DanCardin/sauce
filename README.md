@@ -67,17 +67,22 @@ foo=bar
 
 ### Setup
 
+Currently explicitly supported shells include: `zsh`, `bash`, and
+`fish`. The scaffolding exists to support other shells, which should
+make supporting other common shells that might require `"$SHELL"`
+specific behavior.
+
 Loading things into the environment requires a minimal amount of shell
 code to be executed, so after installing the binary (suggestion below),
-you will need to add `eval "$(sauce shell init)"` to your `.bashrc`,
-`.zshrc`, etc.
+you will need to add add a hook to your bashrc/zshrc/config.fish, etc.
 
-Currently explicitly supported shells include: `zsh` and `bash`. The
-scaffolding exists to support other shells, which should make supporting
-other common shells that might require `"$SHELL"` specific behavior.
+- bash `eval "$(sauce --shell bash shell init)"`
+- zsh `eval "$(sauce --shell zsh shell init)"`
+- fish `sauce --shell fish shell init | source`
 
-When one of the supported shells is not detected, behavior falls back to
-the `bash` implementation.
+Depending on the level of similarity to the above shells, you may be
+able to get away with using one of the above `shell init` hooks until
+explicit support is added
 
 ## Targets
 
@@ -184,6 +189,16 @@ which might be important given that there can be overlap between
 targets. Targets are separated from their search term by `:`,
 i.e. `--glob env:database*,function:work-*`.
 
+### `sauce clear`
+
+`clear`ing will “unset” everything defined in any cascaded saucefiles,
+abiding by any options (–filter/–glob/–as) provided to the command.
+
+The general intent is that one would only/primarily be including targets
+which would be safe to unset (or that you will avoid running `clear` if
+that’s not true for you), given that they were overwritten when you run
+`sauce`.
+
 ## Settings
 
 ### direnv-like automatic execution of `sauce` on `cd`
@@ -274,18 +289,30 @@ project) which would enable things like `sauce --as prod` or
 
 ## Planned Work
 
-- Autoload in bash
-- Support fish shell
-- “strategies” (nested shell vs in-place alterations of the current
-  shell)
-  - Given strategies, the ability to unset/revert alterations in a more
-    robust way is enabled (i.e. kill the subshell). Compared to the
-    in-place modification strategy which essentially requires that
-    `sauce` maintains sole control over all tracked variables (because
-    it can/will `unset` them if asked).
-- more targets: arbitrary key-value pairs
-- pipe `sauce show` to a pager when beyond a full terminal height
 - colorized output
+
+- ability to specify values which should not react to `clear`
+
+  This might be useful for environment variables like `PATH` or
+  `PROMPT`, which would otherwise be very unsafe to include, unless you
+  **never** run `clear`.
+
+- config option to template prompt with `sauce` context.
+
+  Potentially something like `prompt = "(${as}) ${prompt}"` rendering to
+  `(prod) >`.
+
+- ability to subdivide targets by shell
+
+- `sauce config subshell=false/true` (default `false`)
+
+  Given subshell=true, a call to `sauce` would create a subprocess into
+  which the alterations would be made. This would enable one to simply
+  kill the current shell to revert state.
+
+- more targets: arbitrary key-value pairs
+
+- pipe `sauce show` to a pager when beyond a full terminal height
 
 ## Local development
 

@@ -32,18 +32,18 @@ pub fn run() -> Result<()> {
 
     let context = Context::new(data_dir, settings, options)?;
 
-    let shell_kind = &*shell::detect();
+    let shell_kind = &*shell::detect(opts.shell);
 
     let output = match_subcommmand(context, shell_kind, &opts.subcmd, opts.autoload);
-
-    let out = std::io::stderr();
-    let mut handle = out.lock();
-    handle.write_all(output.message().as_ref())?;
-    handle.flush()?;
 
     let out = std::io::stdout();
     let mut handle = out.lock();
     handle.write_all(output.result().as_ref())?;
+    handle.flush()?;
+
+    let out = std::io::stderr();
+    let mut handle = out.lock();
+    handle.write_all(output.message().as_ref())?;
     handle.flush()?;
 
     Ok(())

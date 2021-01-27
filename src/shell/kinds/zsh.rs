@@ -9,23 +9,17 @@ impl Shell for Zsh {
     }
 
     fn init(&self, binary: &str, autoload_hook: bool) -> String {
-        let mut parts = Vec::new();
-
-        parts.push(format!(
-            r#"function {0} {{ eval "$(command {1} "$@")" }}"#,
+        let mut init = format!(
+            include_str!("zsh_init.zsh"),
             binary,
             qualify_binary_path(binary)
-        ));
+        );
 
         if autoload_hook {
-            parts.push(format!(
-                "function _{0}_autoload {{ {0} --autoload }}",
-                binary
-            ));
-            parts.push(format!("add-zsh-hook chpwd _{}_autoload", binary));
+            init.push_str(&format!(include_str!("zsh_init_autoload.zsh"), binary));
         }
 
-        parts.join("\n")
+        init
     }
 
     fn set_var(&self, var: &str, value: &str) -> String {
@@ -75,19 +69,17 @@ mod tests {
         fn it_defaults() {
             let shell = Zsh {};
             let output = shell.init("foo", false);
-            assert_eq!(output, r#"function foo { eval "$(command foo "$@")" }"#);
+            assert_eq!(
+                output,
+                "function foo {\n  eval \"$(command foo --shell zsh \"$@\")\"\n}\n"
+            );
         }
 
         #[test]
         fn it_includes_autoload() {
             let shell = Zsh {};
             let output = shell.init("foo", true);
-            assert_eq!(
-                output,
-                r#"function foo { eval "$(command foo "$@")" }
-function _foo_autoload { foo --autoload }
-add-zsh-hook chpwd _foo_autoload"#
-            );
+            assert_eq!(output.contains("--autoload"), true);
         }
     }
 

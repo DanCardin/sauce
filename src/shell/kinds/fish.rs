@@ -1,49 +1,49 @@
 use crate::shell::utilities::{escape, qualify_binary_path};
 use crate::shell::Shell;
 
-pub struct Bash;
+pub struct Fish;
 
-impl Shell for Bash {
+impl Shell for Fish {
     fn edit(&self, path: &str) -> String {
         format!("\"$EDITOR\" '{}'", path)
     }
 
     fn init(&self, binary: &str, autoload_hook: bool) -> String {
         let mut init = format!(
-            include_str!("bash_init.sh"),
+            include_str!("fish_init.fish"),
             binary,
             qualify_binary_path(binary)
         );
 
         if autoload_hook {
-            init.push_str(&format!(include_str!("bash_init_autoload.sh"), binary));
+            init.push_str(&format!(include_str!("fish_init_autoload.fish"), binary));
         }
 
         init
     }
 
     fn set_var(&self, var: &str, value: &str) -> String {
-        format!("export {}={}", var, escape(value))
+        format!("set -x {} {}", var, escape(value))
     }
 
     fn set_alias(&self, var: &str, value: &str) -> String {
-        format!("alias {}={}", var, escape(&value))
+        format!("alias {} {}", var, escape(&value))
     }
 
     fn set_function(&self, var: &str, value: &str) -> String {
-        format!("function {} {{\n  {}\n}}", var, value.replace("\n", "\n  "))
+        format!("function {}\n  {}\nend", var, value.replace("\n", "\n  "))
     }
 
     fn unset_var(&self, var: &str) -> String {
-        format!("unset {}", var)
+        format!("set -e {}", var)
     }
 
     fn unset_alias(&self, var: &str) -> String {
-        format!("unalias {} 2>/dev/null", var)
+        format!("functions --erase {}", var)
     }
 
     fn unset_function(&self, var: &str) -> String {
-        format!("unset -f {}", var)
+        format!("functions --erase {}", var)
     }
 }
 
@@ -55,7 +55,7 @@ mod tests {
 
         #[test]
         fn it_edits_path() {
-            let shell = Bash {};
+            let shell = Fish {};
             let output = shell.edit("foo/bar");
             assert_eq!(output, r#""$EDITOR" 'foo/bar'"#);
         }
@@ -67,17 +67,17 @@ mod tests {
 
         #[test]
         fn it_defaults() {
-            let shell = Bash {};
+            let shell = Fish {};
             let output = shell.init("foo", false);
             assert_eq!(
                 output,
-                "function foo {\n  eval \"$(command foo --shell bash \"$@\")\"\n}\n"
+                "function foo\n  command foo --shell fish $argv | source\nend\n"
             );
         }
 
         #[test]
-        fn it_autoloads() {
-            let shell = Bash {};
+        fn it_includes_autoload() {
+            let shell = Fish {};
             let output = shell.init("foo", true);
             assert_eq!(output.contains("--autoload"), true);
         }
@@ -89,9 +89,9 @@ mod tests {
 
         #[test]
         fn it_works() {
-            let shell = Bash {};
+            let shell = Fish {};
             let output = shell.set_var("foo", "bar");
-            assert_eq!(output, "export foo=bar");
+            assert_eq!(output, "set -x foo bar");
         }
     }
 
@@ -101,9 +101,9 @@ mod tests {
 
         #[test]
         fn it_works() {
-            let shell = Bash {};
+            let shell = Fish {};
             let output = shell.set_alias("foo", "bar");
-            assert_eq!(output, "alias foo=bar");
+            assert_eq!(output, "alias foo bar");
         }
     }
 
@@ -113,9 +113,9 @@ mod tests {
 
         #[test]
         fn it_works() {
-            let shell = Bash {};
+            let shell = Fish {};
             let output = shell.set_function("foo", "bar");
-            assert_eq!(output, "function foo {\n  bar\n}");
+            assert_eq!(output, "function foo\n  bar\nend");
         }
     }
 
@@ -125,9 +125,9 @@ mod tests {
 
         #[test]
         fn it_works() {
-            let shell = Bash {};
+            let shell = Fish {};
             let output = shell.unset_var("foo");
-            assert_eq!(output, "unset foo");
+            assert_eq!(output, "set -e foo");
         }
     }
 
@@ -137,9 +137,9 @@ mod tests {
 
         #[test]
         fn it_works() {
-            let shell = Bash {};
+            let shell = Fish {};
             let output = shell.unset_alias("foo");
-            assert_eq!(output, "unalias foo 2>/dev/null");
+            assert_eq!(output, "functions --erase foo");
         }
     }
 
@@ -149,9 +149,9 @@ mod tests {
 
         #[test]
         fn it_works() {
-            let shell = Bash {};
+            let shell = Fish {};
             let output = shell.unset_function("foo");
-            assert_eq!(output, "unset -f foo");
+            assert_eq!(output, "functions --erase foo");
         }
     }
 }

@@ -3,8 +3,7 @@ pub mod context;
 mod kinds;
 mod utilities;
 
-pub use kinds::Bash;
-pub use kinds::Zsh;
+pub use kinds::{Bash, Fish, Zsh};
 pub use utilities::detect;
 
 pub trait Shell {
