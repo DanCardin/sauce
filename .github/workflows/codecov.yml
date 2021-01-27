@@ -16,8 +16,6 @@ jobs:
           - ubuntu-latest
         toolchain:
           - nightly
-        cargo_flags:
-          - "--all-features"
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
