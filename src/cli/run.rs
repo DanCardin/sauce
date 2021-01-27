@@ -36,6 +36,11 @@ pub fn run() -> Result<()> {
 
     let output = match_subcommmand(context, shell_kind, &opts.subcmd, opts.autoload);
 
+    let out = std::io::stdout();
+    let mut handle = out.lock();
+    handle.write_all(output.result().as_ref())?;
+    handle.flush()?;
+
     let out = std::io::stderr();
     let mut handle = out.lock();
     handle.write_all(output.message().as_ref())?;
