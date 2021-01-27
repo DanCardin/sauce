@@ -1,8 +1,9 @@
 use crate::shell::kinds::{Bash, Zsh};
-use std::{env, path::Path};
+use std::env;
 
 use crate::shell::Shell;
 
+/// Ensure proper quoting of any `value` being output to the containing shell.
 pub fn escape(value: &str) -> String {
     snailquote::escape(&value.to_string()).replace("\\n", "\n")
 }
@@ -25,14 +26,13 @@ pub fn qualify_binary_path(binary: &str) -> String {
 }
 
 pub fn detect() -> Box<dyn Shell> {
-    let shell = std::env::var_os("SHELL");
-    let shell = shell
-        .as_ref()
-        .and_then(|s| Path::new(s).file_stem())
-        .and_then(|s| s.to_str());
-
-    match shell {
-        Some("zsh") => Box::new(Zsh {}),
-        _ => Box::new(Bash {}),
+    if std::env::var_os("ZSH_VERSION").is_some() {
+        return Box::new(Zsh {});
     }
+
+    if std::env::var_os("BASH_VERSION").is_some() {
+        return Box::new(Bash {});
+    }
+
+    return Box::new(Bash {});
 }

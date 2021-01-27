@@ -8,12 +8,18 @@ impl Shell for Bash {
         format!("\"$EDITOR\" '{}'", path)
     }
 
-    fn init(&self, binary: &str, _autoload: bool) -> String {
-        format!(
-            r#"function {0} {{ eval "$(command {1} "$@")" }}"#,
+    fn init(&self, binary: &str, autoload: bool) -> String {
+        let mut init = format!(
+            include_str!("bash_init.sh"),
             binary,
             qualify_binary_path(binary)
-        )
+        );
+
+        if autoload {
+            init.push_str(&format!(include_str!("bash_init_autoload.sh"), binary));
+        }
+
+        init
     }
 
     fn set_var(&self, var: &str, value: &str) -> String {
@@ -63,7 +69,17 @@ mod tests {
         fn it_defaults() {
             let shell = Bash {};
             let output = shell.init("foo", false);
-            assert_eq!(output, r#"function foo { eval "$(command foo "$@")" }"#);
+            assert_eq!(
+                output,
+                "function foo {\n  eval \"$(command foo \"$@\")\"\n}\n"
+            );
+        }
+
+        #[test]
+        fn it_autoloads() {
+            let shell = Bash {};
+            let output = shell.init("foo", true);
+            assert_eq!(output.contains("--autoload"), true);
         }
     }
 
