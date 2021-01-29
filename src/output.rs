@@ -1,22 +1,26 @@
+use std::fmt::Display;
+
+use ansi_term::{ANSIString, ANSIStrings};
+
 #[derive(Debug)]
-pub struct Output {
+pub struct Output<'a> {
     results: Vec<String>,
-    messages: Vec<String>,
+    messages: Vec<ANSIStrings<'a>>,
     code: Option<ErrorCode>,
 }
 
-impl Output {
+impl<'a> Output<'a> {
     pub fn push_result<F: Into<String>>(&mut self, result: F) {
         self.results.push(result.into());
     }
 
-    pub fn push_message<F: Into<String>>(&mut self, message: F) {
-        self.messages.push(message.into());
+    pub fn push_message(&mut self, message: &'a [ANSIString]) {
+        self.messages.push(ANSIStrings(message));
     }
 
-    pub fn push_error<F: Into<String>>(&mut self, code: ErrorCode, message: F) {
+    pub fn push_error(&mut self, code: ErrorCode, message: &'a [ANSIString]) {
         self.code = Some(code);
-        self.messages.push(message.into());
+        self.messages.push(ANSIStrings(message));
     }
 
     pub fn result(&self) -> String {
@@ -24,7 +28,12 @@ impl Output {
     }
 
     pub fn message(&self) -> String {
-        self.messages.join("\n") + "\n"
+        self.messages
+            .iter()
+            .map(|m| format!("{}\n", m))
+            .collect::<Vec<String>>()
+            .join("")
+        // self.messages.join("\n") + "\n"
     }
 
     pub fn error_code(&self) -> Option<i32> {
@@ -32,7 +41,7 @@ impl Output {
     }
 }
 
-impl Default for Output {
+impl<'a> Default for Output<'a> {
     fn default() -> Self {
         Self {
             results: Vec::new(),

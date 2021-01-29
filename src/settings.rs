@@ -67,7 +67,7 @@ impl Settings {
         default
     }
 
-    pub fn set_values<T: AsRef<str>>(&self, pairs: &[(T, T)], output: &mut Output) {
+    pub fn set_values<'a, T: 'a + AsRef<str>>(&self, pairs: &'a [(T, T)], output: &'a mut Output) {
         let mut document = get_document(&self.file, output);
         let settings_section = document.as_table_mut().entry("settings");
         if settings_section.is_none() {
@@ -84,11 +84,10 @@ impl Settings {
                     } else {
                         output.push_error(
                             ErrorCode::ParseError,
-                            format!(
-                                "{} {}",
-                                RED.bold().paint("Could not parse config value"),
-                                YELLOW.bold().paint(value.as_ref().clone())
-                            ),
+                            &[
+                                RED.bold().paint("Could not parse config value "),
+                                YELLOW.paint(value.as_ref().clone()),
+                            ],
                         );
                         None
                     }
@@ -96,11 +95,10 @@ impl Settings {
                 unknown_setting => {
                     output.push_error(
                         ErrorCode::ParseError,
-                        format!(
-                            "{} {}",
-                            RED.bold().paint("Unrecognized config name"),
-                            YELLOW.bold().paint(unknown_setting)
-                        ),
+                        &[
+                            RED.bold().paint("Unrecognized config name "),
+                            YELLOW.bold().paint(unknown_setting.clone()),
+                        ],
                     );
                     None
                 }

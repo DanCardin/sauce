@@ -40,7 +40,7 @@ pub fn run() -> Result<()> {
 
     let mut out = std::io::stdout();
     let mut err = std::io::stderr();
-    context.write(&mut out, &mut err)?;
+    context.write(&mut out, &mut err, shell::should_be_colored(opts.color))?;
     out.flush()?;
     err.flush()?;
 

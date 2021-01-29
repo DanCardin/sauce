@@ -16,7 +16,7 @@ use crate::{
 pub struct Context<'a> {
     pub settings: Settings,
     pub options: Options<'a>,
-    pub output: Output,
+    pub output: Output<'a>,
 
     pub home: PathBuf,
     pub data_dir: PathBuf,
@@ -198,7 +198,12 @@ impl<'a> Context<'a> {
         };
     }
 
-    pub fn write(&self, mut output: impl Write, mut content: impl Write) -> Result<()> {
+    pub fn write(
+        &self,
+        mut output: impl Write,
+        mut content: impl Write,
+        _color_enabled: bool,
+    ) -> Result<()> {
         output.write_all(self.output.result().as_ref())?;
         content.write_all(self.output.message().as_ref())?;
         Ok(())
