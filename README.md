@@ -150,7 +150,7 @@ being tracked. Given the above example you might see:
           bar.toml
       projects.toml
 
-### `sauce add <target-type> NAME=value`
+### `sauce set <target-type> NAME=value`
 
 For example, `sauce set var AWS_PROFILE=foo FOO=bar`.
 
