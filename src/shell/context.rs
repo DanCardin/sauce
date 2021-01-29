@@ -198,7 +198,12 @@ impl<'a> Context<'a> {
         };
     }
 
-    pub fn write(&self, mut output: impl Write, mut content: impl Write) -> Result<()> {
+    pub fn write(
+        &self,
+        mut output: impl Write,
+        mut content: impl Write,
+        _color_enabled: bool,
+    ) -> Result<()> {
         output.write_all(self.output.result().as_ref())?;
         content.write_all(self.output.message().as_ref())?;
         Ok(())

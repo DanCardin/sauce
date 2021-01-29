@@ -24,7 +24,11 @@ impl Output {
     }
 
     pub fn message(&self) -> String {
-        self.messages.join("\n") + "\n"
+        self.messages
+            .iter()
+            .map(|m| format!("{}\n", m))
+            .collect::<Vec<String>>()
+            .join("")
     }
 
     pub fn error_code(&self) -> Option<i32> {

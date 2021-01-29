@@ -22,7 +22,7 @@ pub fn get_input(values: &[String]) -> Vec<String> {
 
     let mut buffer = String::new();
 
-    if !atty::is(atty::Stream::Stdin) {
+    if atty::isnt(atty::Stream::Stdin) {
         std::io::stdin()
             .read_to_string(&mut buffer)
             .expect("Could not read stdin");

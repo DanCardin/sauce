@@ -4,7 +4,7 @@ mod kinds;
 mod utilities;
 
 pub use kinds::{Bash, Fish, Zsh};
-pub use utilities::detect;
+pub use utilities::{detect, should_be_colored, ColorStrategy, ShellName};
 
 pub trait Shell {
     fn edit(&self, path: &str) -> String;
