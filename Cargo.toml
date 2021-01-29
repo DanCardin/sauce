@@ -23,6 +23,7 @@ dev = []
 
 [dependencies]
 anyhow = '1.0.35'
+atty = "0.2.14"
 etcetera = '0.3.2'
 glob = '0.3.0'
 itertools = "0.10.0"
