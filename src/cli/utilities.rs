@@ -21,6 +21,9 @@ pub fn get_input(values: &[String]) -> Vec<String> {
     let mut handle = in_.lock();
 
     let mut buffer = String::new();
+    handle
+        .read_to_string(&mut buffer)
+        .expect("Could not read user input");
     let mut result = Vec::new();
     result.extend_from_slice(values);
 

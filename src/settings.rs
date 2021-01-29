@@ -1,9 +1,13 @@
+use crate::{
+    colors::{RED, YELLOW},
+    output::ErrorCode,
+    toml::write_document,
+};
 use anyhow::Result;
-use std::{fmt::Display, fs::OpenOptions, io::BufWriter, path::PathBuf};
+use std::{fmt::Display, path::PathBuf};
 
-use crate::toml::get_document;
-use std::io::Write;
-use toml_edit::{Document, Item, Value};
+use crate::{output::Output, toml::get_document};
+use toml_edit::{Document, Item, Table, Value};
 
 #[derive(Debug)]
 pub struct RealizedSettings {
@@ -28,9 +32,9 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn load(config_dir: &PathBuf) -> Result<Self> {
+    pub fn load(config_dir: &PathBuf, output: &mut Output) -> Result<Self> {
         let file = config_dir.with_extension("toml");
-        let document = get_document(&file);
+        let document = get_document(&file, output);
         Ok(Self::from_document(file, &document))
     }
 
@@ -63,27 +67,55 @@ impl Settings {
         default
     }
 
-    pub fn set_values<T: AsRef<str>>(&self, pairs: &[(T, T)]) -> Result<()> {
-        let mut document = get_document(&self.file);
+    pub fn set_values<T: AsRef<str>>(&self, pairs: &[(T, T)], output: &mut Output) {
+        let mut document = get_document(&self.file, output);
+        let settings_section = document.as_table_mut().entry("settings");
+        if settings_section.is_none() {
+            *settings_section = Item::Table(Table::new());
+        }
         let settings = &mut document["settings"];
 
-        for pair in pairs {
-            let (setting, value) = pair;
-            let toml_value = toml_edit::value(value.as_ref().parse::<Value>()?);
-            match setting.as_ref() {
-                "autoload" => settings["autoload"] = toml_value,
-                "autoload-hook" => settings["autoload-hook"] = toml_value,
-                unknown_setting => eprintln!("Unrecognized config name '{}'", unknown_setting),
-            }
+        let mut values = pairs
+            .iter()
+            .filter_map(|(setting, value)| match setting.as_ref() {
+                "autoload" | "autoload-hook" => {
+                    if let Ok(parsed_value) = value.as_ref().parse::<Value>() {
+                        Some((setting, toml_edit::value(parsed_value)))
+                    } else {
+                        output.push_error(
+                            ErrorCode::ParseError,
+                            format!(
+                                "{} {}",
+                                RED.bold().paint("Could not parse config value"),
+                                YELLOW.bold().paint(value.as_ref().clone())
+                            ),
+                        );
+                        None
+                    }
+                }
+                unknown_setting => {
+                    output.push_error(
+                        ErrorCode::ParseError,
+                        format!(
+                            "{} {}",
+                            RED.bold().paint("Unrecognized config name"),
+                            YELLOW.bold().paint(unknown_setting)
+                        ),
+                    );
+                    None
+                }
+            })
+            .peekable();
+
+        if values.peek().is_none() {
+            return;
         }
 
-        let file = OpenOptions::new().write(true).open(&self.file)?;
+        for (setting, value) in values {
+            settings[setting.as_ref()] = value;
+        }
 
-        let mut buffer = BufWriter::new(file);
-        buffer.write_all(document.to_string().as_ref())?;
-        buffer.flush()?;
-
-        Ok(())
+        write_document(&self.file, &document, output);
     }
 }
 
@@ -111,8 +143,15 @@ impl<'a> Setting<'a> {
     fn notify_invalid<T: Display>(&self, kind: &str, value: Option<T>) -> Option<T> {
         if value.is_none() {
             eprintln!(
-                "Settings Error: Failed to interpret '{}' value as {}",
-                self.name, kind,
+                "{}",
+                format!(
+                    "{} {} {} {}",
+                    RED.bold()
+                        .paint("Settings Error: Failed to interpret value"),
+                    YELLOW.paint(self.name),
+                    RED.bold().paint("value as"),
+                    YELLOW.paint(kind),
+                )
             );
         }
         value
@@ -124,8 +163,13 @@ impl<'a> Setting<'a> {
             Item::Value(value) => Some(value),
             _ => {
                 eprintln!(
-                    "Settings Error: Expected '{}' to be a value, not a table",
-                    self.name
+                    "{}",
+                    format!(
+                        "{} {} {}",
+                        RED.bold().paint("Settings Error: Expected"),
+                        YELLOW.paint(self.name),
+                        RED.bold().paint("to be a value, not a table"),
+                    )
                 );
                 None
             }

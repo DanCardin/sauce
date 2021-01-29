@@ -1,38 +1,21 @@
+#[derive(Debug)]
 pub struct Output {
     results: Vec<String>,
     messages: Vec<String>,
+    code: Option<ErrorCode>,
 }
 
 impl Output {
-    #[allow(unused)]
-    pub fn from_result(result: String) -> Self {
-        let mut output = Self::default();
-        output.with_result(result);
-        output
-    }
-
-    #[allow(unused)]
-    pub fn from_message(message: String) -> Self {
-        let mut output = Self::default();
-        output.with_message(message);
-        output
-    }
-
-    pub fn with_result<F: Into<String>>(&mut self, result: F) -> &mut Self {
-        self.results.push(result.into());
-        self
-    }
-
-    pub fn with_message<F: Into<String>>(&mut self, message: F) -> &mut Self {
-        self.messages.push(message.into());
-        self
-    }
-
     pub fn push_result<F: Into<String>>(&mut self, result: F) {
         self.results.push(result.into());
     }
 
     pub fn push_message<F: Into<String>>(&mut self, message: F) {
+        self.messages.push(message.into());
+    }
+
+    pub fn push_error<F: Into<String>>(&mut self, code: ErrorCode, message: F) {
+        self.code = Some(code);
         self.messages.push(message.into());
     }
 
@@ -43,6 +26,10 @@ impl Output {
     pub fn message(&self) -> String {
         self.messages.join("\n") + "\n"
     }
+
+    pub fn error_code(&self) -> Option<i32> {
+        self.code.clone().map(|c| c as i32)
+    }
 }
 
 impl Default for Output {
@@ -50,6 +37,13 @@ impl Default for Output {
         Self {
             results: Vec::new(),
             messages: Vec::new(),
+            code: None,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum ErrorCode {
+    WriteError = 1,
+    ParseError = 2,
 }
