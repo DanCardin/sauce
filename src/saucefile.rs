@@ -1,16 +1,13 @@
-use crate::option::Options;
 use crate::settings::Settings;
 use crate::Context;
-use anyhow::Result;
+use crate::{option::Options, toml::write_document};
 use indexmap::IndexMap;
 use itertools::iproduct;
 use toml_edit::Table;
 
 use crate::toml::get_document;
-use std::io::BufWriter;
-use std::io::Write;
+use std::path::PathBuf;
 use std::str::FromStr;
-use std::{fs::OpenOptions, path::PathBuf};
 use toml_edit::{value, Document, Item, Value};
 
 #[derive(Debug)]
@@ -21,7 +18,7 @@ pub struct Saucefile {
 }
 
 impl Saucefile {
-    pub fn read(context: &Context) -> Self {
+    pub fn read(context: &mut Context) -> Self {
         let mut base_sf = Self {
             path: context.sauce_path.clone(),
             ..Default::default()
@@ -34,7 +31,7 @@ impl Saucefile {
                 continue;
             }
 
-            let document = get_document(&path);
+            let document = get_document(&path, &mut context.output);
 
             if paths.peek().is_some() {
                 base_sf.ancestors.push(document)
@@ -78,17 +75,8 @@ impl Saucefile {
         self.document["function"][&name] = value(toml_value);
     }
 
-    pub fn write(&mut self, context: &Context) -> Result<()> {
-        let file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(context.sauce_path.clone())?;
-        let mut buffer = BufWriter::new(file);
-
-        buffer.write_all(self.document.to_string().as_ref())?;
-        buffer.flush()?;
-
-        Ok(())
+    pub fn write(&mut self, context: &mut Context) {
+        write_document(&context.sauce_path, &self.document, &mut context.output);
     }
 
     fn section(&mut self, sections: &[&str], options: &Options) -> Vec<(&str, String)> {
