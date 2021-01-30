@@ -51,10 +51,10 @@ pub fn run() -> Result<()> {
     Ok(())
 }
 
-pub fn match_subcommmand(
-    context: &mut Context,
+pub fn match_subcommmand<'a>(
+    context: &'a mut Context<'a>,
     shell_kind: &dyn Shell,
-    subcmd: &Option<SubCommand>,
+    subcmd: &'a Option<SubCommand>,
     autoload: bool,
 ) {
     match subcmd {

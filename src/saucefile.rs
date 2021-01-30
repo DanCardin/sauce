@@ -18,7 +18,7 @@ pub struct Saucefile {
 }
 
 impl Saucefile {
-    pub fn read(context: &mut Context) -> Self {
+    pub fn read<'a>(context: &'a mut Context<'a>) -> Self {
         let mut base_sf = Self {
             path: context.sauce_path.clone(),
             ..Default::default()
@@ -75,7 +75,7 @@ impl Saucefile {
         self.document["function"][&name] = value(toml_value);
     }
 
-    pub fn write(&mut self, context: &mut Context) {
+    pub fn write<'a>(&mut self, context: &'a mut Context<'a>) {
         write_document(&context.sauce_path, &self.document, &mut context.output);
     }
 

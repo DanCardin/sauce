@@ -1,3 +1,5 @@
+use ansi_term::ANSIString;
+
 use crate::shell::utilities::get_binary;
 use crate::shell::Shell;
 use crate::Context;
@@ -28,21 +30,27 @@ pub fn clear(context: &mut Context, shell: &dyn Shell, mut saucefile: Saucefile)
     output.push_result(render_functions(&mut saucefile, options, |k, _| {
         shell.unset_function(k)
     }));
-    output.push_message(format!("{}", BLUE.bold().paint("Cleared your sauce")));
+    output.push_message(&[BLUE.bold().paint("Cleared your sauce")]);
 }
 
 pub fn show(context: &mut Context, shell: &dyn Shell, mut saucefile: Saucefile) {
     let options = &context.options;
     let output = &mut context.output;
-    output.push_message(render_vars(&mut saucefile, options, |k, v| {
-        shell.set_var(k, v)
-    }));
-    output.push_message(render_aliases(&mut saucefile, options, |k, v| {
-        shell.set_alias(k, v)
-    }));
-    output.push_message(render_functions(&mut saucefile, options, |k, v| {
-        shell.set_function(k, v)
-    }));
+    output.push_message(&[ANSIString::from(render_vars(
+        &mut saucefile,
+        options,
+        |k, v| shell.set_var(k, v),
+    ))]);
+    output.push_message(&[ANSIString::from(render_aliases(
+        &mut saucefile,
+        options,
+        |k, v| shell.set_alias(k, v),
+    ))]);
+    output.push_message(&[ANSIString::from(render_functions(
+        &mut saucefile,
+        options,
+        |k, v| shell.set_function(k, v),
+    ))]);
 }
 
 pub fn execute(
@@ -74,11 +82,10 @@ pub fn execute(
     output.push_result(render_functions(&mut saucefile, options, |k, v| {
         shell.set_function(k, v)
     }));
-    output.push_message(format!(
-        "{} {}",
-        BLUE.bold().paint("Sourced"),
-        YELLOW.paint(saucefile.path.to_string_lossy())
-    ));
+    output.push_message(&[
+        BLUE.bold().paint("Sourced "),
+        YELLOW.paint(saucefile.path.to_string_lossy()),
+    ]);
 }
 
 fn render_vars<F>(saucefile: &mut Saucefile, options: &Options, mut format_row: F) -> String

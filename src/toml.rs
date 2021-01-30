@@ -1,5 +1,5 @@
 use crate::{
-    colors::{RED, YELLOW},
+    colors::{NORMAL, RED, YELLOW},
     output::{ErrorCode, Output},
 };
 use std::{
@@ -12,7 +12,7 @@ use std::{
 };
 use toml_edit::Document;
 
-pub fn get_document(path: &PathBuf, output: &mut Output) -> Document {
+pub fn get_document<'a>(path: &'a PathBuf, output: &'a mut Output<'a>) -> Document {
     let content = read_file(path);
     file_contents(path, content, output)
 }
@@ -29,22 +29,21 @@ fn read_file(path: &Path) -> String {
     }
 }
 
-fn file_contents(path: &PathBuf, contents: String, output: &mut Output) -> Document {
+fn file_contents<'a>(path: &'a PathBuf, contents: String, output: &'a mut Output<'a>) -> Document {
     contents.parse::<Document>().unwrap_or_else(|e| {
         output.push_error(
             ErrorCode::ParseError,
-            format!(
-                "{} {}:\n{}",
-                RED.bold().paint("Failed to parse"),
+            &[
+                RED.bold().paint("Failed to parse "),
                 YELLOW.bold().paint(path.to_string_lossy()),
-                e
-            ),
+                NORMAL.paint(format!(": {}", e)),
+            ],
         );
         Document::new()
     })
 }
 
-pub fn write_document(file: &PathBuf, document: &Document, output: &mut Output) {
+pub fn write_document<'a>(file: &'a PathBuf, document: &Document, output: &'a mut Output<'a>) {
     if let Ok(file) = OpenOptions::new().write(true).open(&file) {
         let mut buffer = BufWriter::new(file);
         buffer
@@ -56,11 +55,10 @@ pub fn write_document(file: &PathBuf, document: &Document, output: &mut Output) 
     } else {
         output.push_error(
             ErrorCode::WriteError,
-            format!(
-                "{} {}",
-                RED.bold().paint("Could not open"),
-                YELLOW.bold().paint(file.to_string_lossy())
-            ),
+            &[
+                RED.bold().paint("Could not open "),
+                YELLOW.bold().paint(file.to_string_lossy()),
+            ],
         );
     }
 }

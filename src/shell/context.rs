@@ -4,7 +4,7 @@ use std::{env, ops::Deref};
 use std::{io::Write, path::PathBuf};
 
 use crate::{
-    colors::{BLUE, RED, YELLOW},
+    colors::{BLUE, NORMAL, RED, YELLOW},
     option::Options,
     output::{ErrorCode, Output},
     saucefile::Saucefile,
@@ -31,7 +31,7 @@ impl<'a> Context<'a> {
         path: P,
         settings: Settings,
         options: Options<'a>,
-        output: Output,
+        output: Output<'a>,
     ) -> Result<Self> {
         let path = path.into().canonicalize()?;
 
@@ -55,7 +55,7 @@ impl<'a> Context<'a> {
         data_dir: PathBuf,
         settings: Settings,
         options: Options<'a>,
-        output: Output,
+        output: Output<'a>,
     ) -> Result<Self> {
         let current_dir = env::current_dir()?;
         Self::from_path(data_dir, current_dir, settings, options, output)
@@ -65,7 +65,7 @@ impl<'a> Context<'a> {
         data_dir: PathBuf,
         settings: Settings,
         options: Options<'a>,
-        output: Output,
+        output: Output<'a>,
     ) -> Result<Self> {
         if let Some(path) = options.path {
             Self::from_path(data_dir, path, settings, options, output)
@@ -74,7 +74,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    fn saucefile(&mut self) -> Saucefile {
+    fn saucefile(&'a mut self) -> Saucefile {
         Saucefile::read(self)
     }
 
@@ -83,11 +83,14 @@ impl<'a> Context<'a> {
     }
 
     pub fn create_saucefile(&mut self) {
-        let parent = self.sauce_path.parent().unwrap();
+        let parent = self.sauce_path.clone().parent().unwrap();
         if std::fs::create_dir_all(parent).is_err() {
             self.output.push_error(
                 ErrorCode::WriteError,
-                format!("Couldn't create the thing {}", parent.to_string_lossy()),
+                &[
+                    RED.bold().paint("Couldn't create the thing "),
+                    YELLOW.paint(parent.to_string_lossy()),
+                ],
             );
             return;
         }
@@ -95,27 +98,24 @@ impl<'a> Context<'a> {
         if self.sauce_path.is_file() {
             self.output.push_error(
                 ErrorCode::WriteError,
-                format!(
-                    "{} {}",
-                    RED.bold().paint("File already exists at {}"),
-                    YELLOW.paint(self.sauce_path.to_string_lossy()),
-                ),
+                &[
+                    RED.bold().paint("File already exists at "),
+                    YELLOW.paint(self.sauce_path.clone().to_string_lossy()),
+                ],
             );
         } else if std::fs::File::create(&self.sauce_path).is_err() {
             self.output.push_error(
                 ErrorCode::WriteError,
-                format!(
-                    "{} {}",
-                    RED.bold().paint("Couldn't create"),
-                    YELLOW.paint(self.sauce_path.to_string_lossy())
-                ),
+                &[
+                    RED.bold().paint("Couldn't create "),
+                    YELLOW.paint(self.sauce_path.clone().to_string_lossy()),
+                ],
             );
         } else {
-            self.output.push_message(format!(
-                "{} {}",
-                BLUE.bold().paint("Created"),
-                YELLOW.paint(self.sauce_path.to_string_lossy()),
-            ));
+            self.output.push_message(&[
+                BLUE.bold().paint("Created "),
+                YELLOW.paint(self.sauce_path.clone().to_string_lossy()),
+            ]);
         }
     }
 
@@ -123,17 +123,17 @@ impl<'a> Context<'a> {
         actions::edit(self, shell_kind);
     }
 
-    pub fn show(&mut self, shell_kind: &dyn Shell) {
+    pub fn show(&'a mut self, shell_kind: &dyn Shell) {
         let saucefile = self.saucefile();
         actions::show(self, shell_kind, saucefile);
     }
 
-    pub fn clear(&mut self, shell_kind: &dyn Shell) {
+    pub fn clear(&'a mut self, shell_kind: &dyn Shell) {
         let saucefile = self.saucefile();
         actions::clear(self, shell_kind, saucefile);
     }
 
-    pub fn execute(&mut self, shell_kind: &dyn Shell, autoload: bool) {
+    pub fn execute(&'a mut self, shell_kind: &dyn Shell, autoload: bool) {
         let saucefile = self.saucefile();
         actions::execute(self, shell_kind, saucefile, autoload);
     }
@@ -153,7 +153,7 @@ impl<'a> Context<'a> {
             .collect()
     }
 
-    pub fn set_var<T: AsRef<str>>(&mut self, values: &[T]) {
+    pub fn set_var<T: AsRef<str>>(&'a mut self, values: &'a [T]) {
         let mut saucefile = self.saucefile();
         for values in values.iter() {
             let parts: Vec<&str> = values.as_ref().splitn(2, '=').collect();
@@ -162,40 +162,52 @@ impl<'a> Context<'a> {
             let value = parts.get(1).map(Deref::deref).unwrap_or("");
 
             saucefile.set_var(var, value);
-            self.output
-                .push_message(format!("Set {} = {}", BLUE.paint(var), BLUE.paint(value)));
+            self.output.push_message(&[
+                NORMAL.paint("Set "),
+                BLUE.paint(var),
+                NORMAL.paint(" = "),
+                BLUE.paint(value),
+            ]);
         }
         saucefile.write(self);
     }
 
-    pub fn set_alias<T: AsRef<str>>(&mut self, values: &[T]) {
+    pub fn set_alias<T: AsRef<str>>(&'a mut self, values: &'a [T]) {
         let mut saucefile = self.saucefile();
         for values in values.iter() {
             let parts: Vec<&str> = values.as_ref().splitn(2, '=').collect();
             let var = parts[0];
             let value = if parts.len() > 1 { parts[1] } else { "" };
             saucefile.set_alias(var, value);
-            self.output
-                .push_message(format!("Set '{}' to {}", var, value));
+            self.output.push_message(&[
+                NORMAL.paint("Set "),
+                BLUE.paint(var),
+                NORMAL.paint(" = "),
+                BLUE.paint(value),
+            ]);
         }
         saucefile.write(self);
     }
 
-    pub fn set_function(&mut self, name: &str, body: &str) {
+    pub fn set_function(&'a mut self, name: &'a str, body: &'a str) {
         let mut saucefile = self.saucefile();
         saucefile.set_function(name, body);
-        self.output
-            .push_message(format!("Set '{}' to {}", name, body));
+        self.output.push_message(&[
+            NORMAL.paint("Set "),
+            BLUE.paint(name),
+            NORMAL.paint(" = "),
+            BLUE.paint(body),
+        ]);
         saucefile.write(self);
     }
 
-    pub fn set_config<T: AsRef<str>>(&mut self, values: &[(T, T)], global: bool) {
-        let saucefile = self.saucefile();
-        if global {
-            self.settings.set_values(&values, &mut self.output);
-        } else {
-            saucefile.settings().set_values(&values, &mut self.output);
-        };
+    pub fn set_config<T: 'a + AsRef<str>>(&mut self, values: &'a [(T, T)], global: bool) {
+        // let saucefile = self.saucefile();
+        // if global {
+        //     self.settings.set_values(&values, &mut self.output);
+        // } else {
+        //     saucefile.settings().set_values(&values, &mut self.output);
+        // };
     }
 
     pub fn write(

@@ -32,7 +32,7 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn load(config_dir: &PathBuf, output: &mut Output) -> Result<Self> {
+    pub fn load<'a>(config_dir: &PathBuf, output: &'a mut Output<'a>) -> Result<Self> {
         let file = config_dir.with_extension("toml");
         let document = get_document(&file, output);
         Ok(Self::from_document(file, &document))
@@ -67,7 +67,11 @@ impl Settings {
         default
     }
 
-    pub fn set_values<'a, T: 'a + AsRef<str>>(&self, pairs: &'a [(T, T)], output: &'a mut Output) {
+    pub fn set_values<'a, T: 'a + AsRef<str>>(
+        &'a self,
+        pairs: &'a [(T, T)],
+        output: &'a mut Output<'a>,
+    ) {
         let mut document = get_document(&self.file, output);
         let settings_section = document.as_table_mut().entry("settings");
         if settings_section.is_none() {
