@@ -1,7 +1,7 @@
 use anyhow::Result;
 use etcetera::home_dir;
+use std::path::PathBuf;
 use std::{env, ops::Deref};
-use std::{io::Write, path::PathBuf};
 
 use crate::{
     colors::{BLUE, RED, YELLOW},
@@ -85,37 +85,37 @@ impl<'a> Context<'a> {
     pub fn create_saucefile(&mut self) {
         let parent = self.sauce_path.parent().unwrap();
         if std::fs::create_dir_all(parent).is_err() {
-            self.output.push_error(
+            self.output.notify_error(
                 ErrorCode::WriteError,
-                format!("Couldn't create the thing {}", parent.to_string_lossy()),
+                &[
+                    RED.paint("Couldn't create "),
+                    YELLOW.paint(parent.to_string_lossy()),
+                ],
             );
             return;
         }
 
         if self.sauce_path.is_file() {
-            self.output.push_error(
+            self.output.notify_error(
                 ErrorCode::WriteError,
-                format!(
-                    "{} {}",
-                    RED.bold().paint("File already exists at {}"),
+                &[
+                    RED.bold().paint("File already exists at "),
                     YELLOW.paint(self.sauce_path.to_string_lossy()),
-                ),
+                ],
             );
         } else if std::fs::File::create(&self.sauce_path).is_err() {
-            self.output.push_error(
+            self.output.notify_error(
                 ErrorCode::WriteError,
-                format!(
-                    "{} {}",
+                &[
                     RED.bold().paint("Couldn't create"),
-                    YELLOW.paint(self.sauce_path.to_string_lossy())
-                ),
+                    YELLOW.paint(self.sauce_path.to_string_lossy()),
+                ],
             );
         } else {
-            self.output.push_message(format!(
-                "{} {}",
+            self.output.notify(&[
                 BLUE.bold().paint("Created"),
                 YELLOW.paint(self.sauce_path.to_string_lossy()),
-            ));
+            ]);
         }
     }
 
@@ -162,8 +162,12 @@ impl<'a> Context<'a> {
             let value = parts.get(1).map(Deref::deref).unwrap_or("");
 
             saucefile.set_var(var, value);
-            self.output
-                .push_message(format!("Set {} = {}", BLUE.paint(var), BLUE.paint(value)));
+            self.output.notify(&[
+                BLUE.paint("Set "),
+                YELLOW.paint(var),
+                BLUE.paint(" = "),
+                YELLOW.paint(value),
+            ]);
         }
         saucefile.write(self);
     }
@@ -175,8 +179,12 @@ impl<'a> Context<'a> {
             let var = parts[0];
             let value = if parts.len() > 1 { parts[1] } else { "" };
             saucefile.set_alias(var, value);
-            self.output
-                .push_message(format!("Set '{}' to {}", var, value));
+            self.output.notify(&[
+                BLUE.paint("Set "),
+                YELLOW.paint(var),
+                BLUE.paint(" = "),
+                YELLOW.paint(value),
+            ]);
         }
         saucefile.write(self);
     }
@@ -184,8 +192,12 @@ impl<'a> Context<'a> {
     pub fn set_function(&mut self, name: &str, body: &str) {
         let mut saucefile = self.saucefile();
         saucefile.set_function(name, body);
-        self.output
-            .push_message(format!("Set '{}' to {}", name, body));
+        self.output.notify(&[
+            BLUE.paint("Set "),
+            YELLOW.paint(name),
+            BLUE.paint(" = "),
+            YELLOW.paint(body),
+        ]);
         saucefile.write(self);
     }
 
@@ -198,15 +210,8 @@ impl<'a> Context<'a> {
         };
     }
 
-    pub fn write(
-        &self,
-        mut output: impl Write,
-        mut content: impl Write,
-        _color_enabled: bool,
-    ) -> Result<()> {
-        output.write_all(self.output.result().as_ref())?;
-        content.write_all(self.output.message().as_ref())?;
-        Ok(())
+    pub fn flush(&mut self) -> Result<()> {
+        self.output.flush()
     }
 }
 

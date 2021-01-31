@@ -82,25 +82,23 @@ impl Settings {
                     if let Ok(parsed_value) = value.as_ref().parse::<Value>() {
                         Some((setting, toml_edit::value(parsed_value)))
                     } else {
-                        output.push_error(
+                        output.notify_error(
                             ErrorCode::ParseError,
-                            format!(
-                                "{} {}",
+                            &[
                                 RED.bold().paint("Could not parse config value"),
-                                YELLOW.bold().paint(value.as_ref().clone())
-                            ),
+                                YELLOW.bold().paint(value.as_ref()),
+                            ],
                         );
                         None
                     }
                 }
                 unknown_setting => {
-                    output.push_error(
+                    output.notify_error(
                         ErrorCode::ParseError,
-                        format!(
-                            "{} {}",
+                        &[
                             RED.bold().paint("Unrecognized config name"),
-                            YELLOW.bold().paint(unknown_setting)
-                        ),
+                            YELLOW.bold().paint(unknown_setting),
+                        ],
                     );
                     None
                 }

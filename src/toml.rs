@@ -31,14 +31,14 @@ fn read_file(path: &Path) -> String {
 
 fn file_contents(path: &PathBuf, contents: String, output: &mut Output) -> Document {
     contents.parse::<Document>().unwrap_or_else(|e| {
-        output.push_error(
+        output.notify_error(
             ErrorCode::ParseError,
-            format!(
-                "{} {}:\n{}",
-                RED.bold().paint("Failed to parse"),
+            &[
+                RED.bold().paint("Failed to parse "),
                 YELLOW.bold().paint(path.to_string_lossy()),
-                e
-            ),
+                RED.bold().paint(": \n"),
+                RED.paint(e.to_string()),
+            ],
         );
         Document::new()
     })
@@ -49,18 +49,25 @@ pub fn write_document(file: &PathBuf, document: &Document, output: &mut Output) 
         let mut buffer = BufWriter::new(file);
         buffer
             .write_all(document.to_string().as_ref())
-            .expect(&RED.bold().paint("Failed to write settings"));
-        buffer
-            .flush()
-            .expect(&RED.bold().paint("Failed to write settings"));
+            .unwrap_or_else(|_| {
+                output.notify_error(
+                    ErrorCode::WriteError,
+                    &[RED.bold().paint("Failed to write settings")],
+                );
+            });
+        buffer.flush().unwrap_or_else(|_| {
+            output.notify_error(
+                ErrorCode::WriteError,
+                &[RED.bold().paint("Failed to write settings")],
+            );
+        });
     } else {
-        output.push_error(
+        output.notify_error(
             ErrorCode::WriteError,
-            format!(
-                "{} {}",
+            &[
                 RED.bold().paint("Could not open"),
-                YELLOW.bold().paint(file.to_string_lossy())
-            ),
+                YELLOW.bold().paint(file.to_string_lossy()),
+            ],
         );
     }
 }

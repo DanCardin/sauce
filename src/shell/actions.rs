@@ -1,48 +1,50 @@
-use crate::shell::utilities::get_binary;
-use crate::shell::Shell;
-use crate::Context;
-use crate::{colors::BLUE, option::Options};
-use crate::{colors::YELLOW, saucefile::Saucefile};
+use ansi_term::Style;
+
+use crate::{
+    colors::{BLUE, YELLOW},
+    option::Options,
+    saucefile::Saucefile,
+    shell::{utilities::get_binary, Shell},
+    Context,
+};
 
 pub fn edit(context: &mut Context, shell: &dyn Shell) {
     let path = &context.sauce_path.to_string_lossy();
     let result = shell.edit(path);
-    context.output.push_result(result);
+    context.output.output(result);
 }
 
 pub fn init(context: &mut Context, shell: &dyn Shell) {
     let binary = get_binary();
     let result = shell.init(&binary, context.settings.autoload_hook.unwrap_or(false));
-    context.output.push_result(result);
+    context.output.output(result);
 }
 
 pub fn clear(context: &mut Context, shell: &dyn Shell, mut saucefile: Saucefile) {
     let options = &context.options;
     let output = &mut context.output;
-    output.push_result(render_vars(&mut saucefile, options, |k, _| {
+    output.output(render_vars(&mut saucefile, options, |k, _| {
         shell.unset_var(k)
     }));
-    output.push_result(render_aliases(&mut saucefile, options, |k, _| {
+    output.output(render_aliases(&mut saucefile, options, |k, _| {
         shell.unset_alias(k)
     }));
-    output.push_result(render_functions(&mut saucefile, options, |k, _| {
+    output.output(render_functions(&mut saucefile, options, |k, _| {
         shell.unset_function(k)
     }));
-    output.push_message(format!("{}", BLUE.bold().paint("Cleared your sauce")));
+    output.notify(&[BLUE.bold().paint("Cleared your sauce")]);
 }
 
 pub fn show(context: &mut Context, shell: &dyn Shell, mut saucefile: Saucefile) {
     let options = &context.options;
     let output = &mut context.output;
-    output.push_message(render_vars(&mut saucefile, options, |k, v| {
-        shell.set_var(k, v)
-    }));
-    output.push_message(render_aliases(&mut saucefile, options, |k, v| {
-        shell.set_alias(k, v)
-    }));
-    output.push_message(render_functions(&mut saucefile, options, |k, v| {
-        shell.set_function(k, v)
-    }));
+
+    let vars = render_vars(&mut saucefile, options, |k, v| shell.set_var(k, v));
+    let aliases = render_aliases(&mut saucefile, options, |k, v| shell.set_alias(k, v));
+    let functions = render_functions(&mut saucefile, options, |k, v| shell.set_function(k, v));
+    output.notify(&[Style::default().paint(vars)]);
+    output.notify(&[Style::default().paint(aliases)]);
+    output.notify(&[Style::default().paint(functions)]);
 }
 
 pub fn execute(
@@ -65,20 +67,20 @@ pub fn execute(
     let options = &context.options;
     let output = &mut context.output;
 
-    output.push_result(render_vars(&mut saucefile, options, |k, v| {
+    output.output(render_vars(&mut saucefile, options, |k, v| {
         shell.set_var(k, v)
     }));
-    output.push_result(render_aliases(&mut saucefile, options, |k, v| {
+    output.output(render_aliases(&mut saucefile, options, |k, v| {
         shell.set_alias(k, v)
     }));
-    output.push_result(render_functions(&mut saucefile, options, |k, v| {
+    output.output(render_functions(&mut saucefile, options, |k, v| {
         shell.set_function(k, v)
     }));
-    output.push_message(format!(
-        "{} {}",
-        BLUE.bold().paint("Sourced"),
-        YELLOW.paint(saucefile.path.to_string_lossy())
-    ));
+
+    output.notify(&[
+        BLUE.bold().paint("Sourced "),
+        YELLOW.paint(saucefile.path.to_string_lossy()),
+    ]);
 }
 
 fn render_vars<F>(saucefile: &mut Saucefile, options: &Options, mut format_row: F) -> String
@@ -119,65 +121,23 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::shell::Shell;
-
-    pub struct TestShell;
-
-    impl Shell for TestShell {
-        fn edit(&self, path: &str) -> String {
-            format!("edit {}", path)
-        }
-
-        fn init(&self, binary: &str, autoload_hook: bool) -> String {
-            if autoload_hook {
-                format!("{} {}", binary, "--autoload")
-            } else {
-                format!("{}", binary)
-            }
-        }
-
-        fn set_var(&self, var: &str, value: &str) -> String {
-            format!("export {}={}", var, value)
-        }
-
-        fn set_alias(&self, var: &str, value: &str) -> String {
-            format!("alias {}={}", var, value)
-        }
-
-        fn set_function(&self, var: &str, value: &str) -> String {
-            format!("function {}={}", var, value)
-        }
-
-        fn unset_var(&self, var: &str) -> String {
-            format!("unset {}", var)
-        }
-
-        fn unset_alias(&self, var: &str) -> String {
-            format!("unalias {}", var)
-        }
-
-        fn unset_function(&self, var: &str) -> String {
-            format!("unset {}", var)
-        }
-    }
+    use crate::test_utils::{setup, TestShell};
+    use std::path::Path;
 
     mod edit {
-        use std::path::Path;
-
         use super::super::*;
         use super::*;
         use pretty_assertions::assert_eq;
 
         #[test]
         fn it_respects_editor_env_var_zsh() {
+            let (out, err, mut context) = setup();
+            context.sauce_path = Path::new("foo/bar").into();
+
             let shell = TestShell {};
-            let mut context = Context {
-                sauce_path: Path::new("foo/bar").into(),
-                ..Context::default()
-            };
             edit(&mut context, &shell);
-            assert_eq!(context.output.result(), "edit foo/bar\n");
-            assert_eq!(context.output.message(), "\n");
+            assert_eq!(out.value(), "edit foo/bar\n");
+            assert_eq!(err.value(), "");
         }
     }
 
@@ -188,25 +148,25 @@ mod tests {
 
         #[test]
         fn it_defaults() {
+            let (out, err, mut context) = setup();
             let shell = TestShell {};
-            let mut context = Context::default();
             init(&mut context, &shell);
 
-            assert_eq!(context.output.result(), "sauce\n");
-            assert_eq!(context.output.message(), "\n");
+            assert_eq!(out.value(), "sauce\n");
+            assert_eq!(err.value(), "");
         }
 
         #[test]
         fn it_emits_autoload() {
+            let (out, err, mut context) = setup();
             let shell = TestShell {};
-            let mut context = Context::default();
 
             context.settings.autoload_hook = Some(true);
 
             init(&mut context, &shell);
 
-            assert_eq!(context.output.result(), "sauce --autoload\n");
-            assert_eq!(context.output.message(), "\n");
+            assert_eq!(out.value(), "sauce --autoload\n");
+            assert_eq!(err.value(), "");
         }
     }
 
@@ -218,7 +178,7 @@ mod tests {
         #[test]
         fn it_clears() {
             let shell = TestShell {};
-            let mut context = Context::default();
+            let (out, err, mut context) = setup();
             let mut saucefile = Saucefile::default();
             saucefile.set_var("var", "varvalue");
             saucefile.set_var("alias", "aliasvalue");
@@ -226,11 +186,8 @@ mod tests {
 
             clear(&mut context, &shell, saucefile);
 
-            assert_eq!(
-                context.output.result(),
-                "unset var;\nunset alias;\nunset function;\n\n\n"
-            );
-            assert_eq!(context.output.message(), "\nCleared your sauce\n");
+            assert_eq!(out.value(), "unset var;\nunset alias;\nunset function;\n\n");
+            assert_eq!(err.value(), "Cleared your sauce\n");
         }
     }
 
@@ -242,7 +199,7 @@ mod tests {
         #[test]
         fn it_shows() {
             let shell = TestShell {};
-            let mut context = Context::default();
+            let (out, err, mut context) = setup();
             let mut saucefile = Saucefile::default();
             saucefile.set_var("var", "varvalue");
             saucefile.set_var("alias", "aliasvalue");
@@ -250,10 +207,10 @@ mod tests {
 
             show(&mut context, &shell, saucefile);
 
-            assert_eq!(context.output.result(), "\n");
+            assert_eq!(out.value(), "");
             assert_eq!(
-                context.output.message(),
-                "export var=varvalue;\nexport alias=aliasvalue;\nexport function=functionvalue;\n\n\n\n"
+                err.value(),
+                "export var=varvalue;\nexport alias=aliasvalue;\nexport function=functionvalue;\n\n"
             );
         }
     }
@@ -266,7 +223,7 @@ mod tests {
         #[test]
         fn it_executes() {
             let shell = TestShell {};
-            let mut context = Context::default();
+            let (out, err, mut context) = setup();
             let mut saucefile = Saucefile::default();
             saucefile.set_var("var", "varvalue");
             saucefile.set_var("alias", "aliasvalue");
@@ -275,22 +232,22 @@ mod tests {
             execute(&mut context, &shell, saucefile, false);
 
             assert_eq!(
-                context.output.result(),
-                "export var=varvalue;\nexport alias=aliasvalue;\nexport function=functionvalue;\n\n\n\n"
+                out.value(),
+                "export var=varvalue;\nexport alias=aliasvalue;\nexport function=functionvalue;\n\n"
             );
-            assert_eq!(context.output.message(), "Sourced \n");
+            assert_eq!(err.value(), "Sourced \n");
         }
 
         #[test]
         fn it_doesnt_execute_with_autoload_flag_and_its_disabled() {
             let shell = TestShell {};
-            let mut context = Context::default();
+            let (out, err, mut context) = setup();
             let saucefile = Saucefile::default();
 
             execute(&mut context, &shell, saucefile, true);
 
-            assert_eq!(context.output.result(), "\n");
-            assert_eq!(context.output.message(), "\n");
+            assert_eq!(out.value(), "");
+            assert_eq!(err.value(), "");
         }
     }
 }

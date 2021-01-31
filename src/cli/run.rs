@@ -6,7 +6,6 @@ use crate::shell::{self, Shell};
 use crate::Context;
 use anyhow::Result;
 use etcetera::app_strategy::{AppStrategy, AppStrategyArgs, Xdg};
-use std::io::Write;
 
 use super::shape::{CliOptions, KeyValuePair, SetKinds, ShellKinds, SubCommand};
 
@@ -22,7 +21,11 @@ pub fn run() -> Result<()> {
     let data_dir = strategy.data_dir();
     let config_dir = strategy.config_dir();
 
-    let mut output = Output::default();
+    let out = Box::new(std::io::stdout());
+    let err = Box::new(std::io::stderr());
+
+    let color_enabled = shell::should_be_colored(opts.color);
+    let mut output = Output::new(out, err, color_enabled);
 
     let settings = Settings::load(&config_dir, &mut output)?;
     let options = Options::new(
@@ -38,11 +41,7 @@ pub fn run() -> Result<()> {
 
     match_subcommmand(&mut context, shell_kind, &opts.subcmd, opts.autoload);
 
-    let mut out = std::io::stdout();
-    let mut err = std::io::stderr();
-    context.write(&mut out, &mut err, shell::should_be_colored(opts.color))?;
-    out.flush()?;
-    err.flush()?;
+    context.flush()?;
 
     if let Some(code) = context.output.error_code() {
         std::process::exit(code);

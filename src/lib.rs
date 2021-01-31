@@ -7,4 +7,6 @@ pub mod settings;
 pub mod shell;
 mod toml;
 
+pub mod test_utils;
+
 pub use shell::context::Context;
