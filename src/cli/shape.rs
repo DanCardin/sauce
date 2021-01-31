@@ -1,5 +1,6 @@
+use crate::shell::{ColorStrategy, ShellName};
 use clap::Clap;
-use std::{io::Write, str::FromStr};
+use std::io::Write;
 
 /// Sauce!
 #[derive(Clap, Debug)]
@@ -13,6 +14,10 @@ pub struct CliOptions {
     /// Sets a custom config file. Could have been an Option<T> with no default too
     #[clap(short, long)]
     pub config: Option<String>,
+
+    ///
+    #[clap(long, default_value = "auto")]
+    pub color: ColorStrategy,
 
     /// A level of verbosity, and can be used multiple times
     #[clap(short, long, parse(from_occurrences))]
@@ -55,29 +60,6 @@ impl CliOptions {
             handle.flush().unwrap();
             std::process::exit(1)
         })
-    }
-}
-
-#[derive(Debug)]
-pub enum ShellName {
-    Zsh,
-    Fish,
-    Bash,
-}
-
-impl FromStr for ShellName {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, String> {
-        match s {
-            "zsh" => Ok(Self::Zsh),
-            "bash" => Ok(Self::Bash),
-            "fish" => Ok(Self::Fish),
-            unhandled => Err(format!(
-                "Unrecognized shell '{}'. Valid options are: zsh, fish, bash",
-                unhandled
-            )),
-        }
     }
 }
 

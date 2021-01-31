@@ -4,8 +4,9 @@ use std::path::PathBuf;
 use std::{env, ops::Deref};
 
 use crate::{
+    colors::{BLUE, RED, YELLOW},
     option::Options,
-    output::Output,
+    output::{ErrorCode, Output},
     saucefile::Saucefile,
     settings::Settings,
     shell::{actions, Shell},
@@ -15,6 +16,7 @@ use crate::{
 pub struct Context<'a> {
     pub settings: Settings,
     pub options: Options<'a>,
+    pub output: Output,
 
     pub home: PathBuf,
     pub data_dir: PathBuf,
@@ -29,6 +31,7 @@ impl<'a> Context<'a> {
         path: P,
         settings: Settings,
         options: Options<'a>,
+        output: Output,
     ) -> Result<Self> {
         let path = path.into().canonicalize()?;
 
@@ -44,6 +47,7 @@ impl<'a> Context<'a> {
             data_dir,
             path,
             sauce_path,
+            output,
         })
     }
 
@@ -51,63 +55,87 @@ impl<'a> Context<'a> {
         data_dir: PathBuf,
         settings: Settings,
         options: Options<'a>,
+        output: Output,
     ) -> Result<Self> {
         let current_dir = env::current_dir()?;
-        Self::from_path(data_dir, current_dir, settings, options)
+        Self::from_path(data_dir, current_dir, settings, options, output)
     }
 
-    pub fn new(data_dir: PathBuf, settings: Settings, options: Options<'a>) -> Result<Self> {
+    pub fn new(
+        data_dir: PathBuf,
+        settings: Settings,
+        options: Options<'a>,
+        output: Output,
+    ) -> Result<Self> {
         if let Some(path) = options.path {
-            Self::from_path(data_dir, path, settings, options)
+            Self::from_path(data_dir, path, settings, options, output)
         } else {
-            Self::from_current_dir(data_dir, settings, options)
+            Self::from_current_dir(data_dir, settings, options, output)
         }
     }
 
-    fn saucefile(&self) -> Saucefile {
+    fn saucefile(&mut self) -> Saucefile {
         Saucefile::read(self)
     }
 
-    pub fn init_shell(&self, shell_kind: &dyn Shell, output: &mut Output) {
-        actions::init(self, shell_kind, output)
+    pub fn init_shell(&mut self, shell_kind: &dyn Shell) {
+        actions::init(self, shell_kind)
     }
 
-    pub fn create_saucefile(&self, output: &mut Output) {
+    pub fn create_saucefile(&mut self) {
         let parent = self.sauce_path.parent().unwrap();
         if std::fs::create_dir_all(parent).is_err() {
-            output.push_message(format!(
-                "Couldn't create the thing {}",
-                parent.to_string_lossy()
-            ));
+            self.output.notify_error(
+                ErrorCode::WriteError,
+                &[
+                    RED.paint("Couldn't create "),
+                    YELLOW.paint(parent.to_string_lossy()),
+                ],
+            );
             return;
         }
 
         if self.sauce_path.is_file() {
-            output.push_message(format!(
-                "File already exists at {}",
-                self.sauce_path.to_string_lossy()
-            ));
+            self.output.notify_error(
+                ErrorCode::WriteError,
+                &[
+                    RED.bold().paint("File already exists at "),
+                    YELLOW.paint(self.sauce_path.to_string_lossy()),
+                ],
+            );
         } else if std::fs::File::create(&self.sauce_path).is_err() {
-            output.push_message("couldn't create the file");
+            self.output.notify_error(
+                ErrorCode::WriteError,
+                &[
+                    RED.bold().paint("Couldn't create"),
+                    YELLOW.paint(self.sauce_path.to_string_lossy()),
+                ],
+            );
         } else {
-            output.push_message("Created".to_string());
+            self.output.notify(&[
+                BLUE.bold().paint("Created"),
+                YELLOW.paint(self.sauce_path.to_string_lossy()),
+            ]);
         }
     }
 
-    pub fn edit_saucefile(&self, shell_kind: &dyn Shell, output: &mut Output) {
-        actions::edit(self, shell_kind, output);
+    pub fn edit_saucefile(&mut self, shell_kind: &dyn Shell) {
+        actions::edit(self, shell_kind);
     }
 
-    pub fn show(&self, shell_kind: &dyn Shell, output: &mut Output) {
-        actions::show(self, shell_kind, self.saucefile(), output);
+    pub fn show(&mut self, shell_kind: &dyn Shell) {
+        let saucefile = self.saucefile();
+        actions::show(self, shell_kind, saucefile);
     }
 
-    pub fn clear(&self, shell_kind: &dyn Shell, output: &mut Output) {
-        actions::clear(self, shell_kind, self.saucefile(), output);
+    pub fn clear(&mut self, shell_kind: &dyn Shell) {
+        let saucefile = self.saucefile();
+        actions::clear(self, shell_kind, saucefile);
     }
 
-    pub fn execute(&self, shell_kind: &dyn Shell, output: &mut Output, autoload: bool) {
-        actions::execute(self, shell_kind, self.saucefile(), output, autoload);
+    pub fn execute(&mut self, shell_kind: &dyn Shell, autoload: bool) {
+        let saucefile = self.saucefile();
+        actions::execute(self, shell_kind, saucefile, autoload);
     }
 
     pub fn cascade_paths(&self) -> Vec<PathBuf> {
@@ -125,7 +153,7 @@ impl<'a> Context<'a> {
             .collect()
     }
 
-    pub fn set_var<T: AsRef<str>>(&self, values: &[T], output: &mut Output) {
+    pub fn set_var<T: AsRef<str>>(&mut self, values: &[T]) {
         let mut saucefile = self.saucefile();
         for values in values.iter() {
             let parts: Vec<&str> = values.as_ref().splitn(2, '=').collect();
@@ -134,47 +162,56 @@ impl<'a> Context<'a> {
             let value = parts.get(1).map(Deref::deref).unwrap_or("");
 
             saucefile.set_var(var, value);
-            output.push_message(format!("Set '{}' to {}", var, value));
+            self.output.notify(&[
+                BLUE.paint("Set "),
+                YELLOW.paint(var),
+                BLUE.paint(" = "),
+                YELLOW.paint(value),
+            ]);
         }
-        if saucefile.write(self).is_err() {
-            output.push_message("couldn't write the thing")
-        }
+        saucefile.write(self);
     }
 
-    pub fn set_alias<T: AsRef<str>>(&self, values: &[T], output: &mut Output) {
+    pub fn set_alias<T: AsRef<str>>(&mut self, values: &[T]) {
         let mut saucefile = self.saucefile();
         for values in values.iter() {
             let parts: Vec<&str> = values.as_ref().splitn(2, '=').collect();
             let var = parts[0];
             let value = if parts.len() > 1 { parts[1] } else { "" };
             saucefile.set_alias(var, value);
-            output.push_message(format!("Set '{}' to {}", var, value));
+            self.output.notify(&[
+                BLUE.paint("Set "),
+                YELLOW.paint(var),
+                BLUE.paint(" = "),
+                YELLOW.paint(value),
+            ]);
         }
-        if saucefile.write(self).is_err() {
-            output.push_message("couldn't write the thing")
-        }
+        saucefile.write(self);
     }
 
-    pub fn set_function(&self, name: &str, body: &str, output: &mut Output) {
+    pub fn set_function(&mut self, name: &str, body: &str) {
         let mut saucefile = self.saucefile();
         saucefile.set_function(name, body);
-        output.push_message(format!("Set '{}' to {}", name, body));
-        if saucefile.write(self).is_err() {
-            output.push_message("couldn't write the thing")
-        }
+        self.output.notify(&[
+            BLUE.paint("Set "),
+            YELLOW.paint(name),
+            BLUE.paint(" = "),
+            YELLOW.paint(body),
+        ]);
+        saucefile.write(self);
     }
 
-    pub fn set_config<T: AsRef<str>>(&self, values: &[(T, T)], global: bool, output: &mut Output) {
+    pub fn set_config<T: AsRef<str>>(&mut self, values: &[(T, T)], global: bool) {
         let saucefile = self.saucefile();
-        let result = if global {
-            self.settings.set_values(&values)
+        if global {
+            self.settings.set_values(&values, &mut self.output);
         } else {
-            saucefile.settings().set_values(&values)
+            saucefile.settings().set_values(&values, &mut self.output);
         };
+    }
 
-        if result.is_err() {
-            output.push_message(format!("Failed to set config values: {:?}", result));
-        }
+    pub fn flush(&mut self) -> Result<()> {
+        self.output.flush()
     }
 }
 
@@ -187,6 +224,7 @@ impl<'a> Default for Context<'a> {
             data_dir: PathBuf::new(),
             path: PathBuf::new(),
             sauce_path: PathBuf::new(),
+            output: Output::default(),
         }
     }
 }

@@ -1,10 +1,53 @@
-use crate::{
-    cli::shape::ShellName,
-    shell::kinds::{Bash, Fish, Zsh},
-};
-use std::env;
+use crate::shell::kinds::{Bash, Fish, Zsh};
+use std::{env, str::FromStr};
 
 use crate::shell::Shell;
+
+#[derive(Debug)]
+pub enum ShellName {
+    Zsh,
+    Fish,
+    Bash,
+}
+
+impl FromStr for ShellName {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, String> {
+        match s {
+            "zsh" => Ok(Self::Zsh),
+            "bash" => Ok(Self::Bash),
+            "fish" => Ok(Self::Fish),
+            unhandled => Err(format!(
+                "Unrecognized shell '{}'. Valid options are: zsh, fish, bash",
+                unhandled
+            )),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ColorStrategy {
+    Always,
+    Never,
+    Auto,
+}
+
+impl FromStr for ColorStrategy {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, String> {
+        match s {
+            "always" => Ok(Self::Always),
+            "never" => Ok(Self::Never),
+            "auto" => Ok(Self::Auto),
+            unhandled => Err(format!(
+                "Unrecognized color value '{}'. Valid options are: always, never, auto",
+                unhandled
+            )),
+        }
+    }
+}
 
 /// Ensure proper quoting of any `value` being output to the containing shell.
 pub fn escape(value: &str) -> String {
@@ -33,5 +76,20 @@ pub fn detect(shell_name: ShellName) -> Box<dyn Shell> {
         ShellName::Zsh => Box::new(Zsh {}),
         ShellName::Fish => Box::new(Fish {}),
         ShellName::Bash => Box::new(Bash {}),
+    }
+}
+
+pub fn should_be_colored(strategy: ColorStrategy) -> bool {
+    match strategy {
+        ColorStrategy::Always => true,
+        ColorStrategy::Never => false,
+        ColorStrategy::Auto => {
+            if atty::isnt(atty::Stream::Stdout) {
+                // NO_COLOR being None implies it should be colored, i.e. true
+                std::env::var_os("NO_COLOR").is_none()
+            } else {
+                false
+            }
+        }
     }
 }

@@ -6,7 +6,6 @@ use crate::shell::{self, Shell};
 use crate::Context;
 use anyhow::Result;
 use etcetera::app_strategy::{AppStrategy, AppStrategyArgs, Xdg};
-use std::io::Write;
 
 use super::shape::{CliOptions, KeyValuePair, SetKinds, ShellKinds, SubCommand};
 
@@ -22,7 +21,13 @@ pub fn run() -> Result<()> {
     let data_dir = strategy.data_dir();
     let config_dir = strategy.config_dir();
 
-    let settings = Settings::load(&config_dir)?;
+    let out = Box::new(std::io::stdout());
+    let err = Box::new(std::io::stderr());
+
+    let color_enabled = shell::should_be_colored(opts.color);
+    let mut output = Output::new(out, err, color_enabled);
+
+    let settings = Settings::load(&config_dir, &mut output)?;
     let options = Options::new(
         opts.glob.as_deref(),
         opts.filter.as_deref(),
@@ -30,55 +35,45 @@ pub fn run() -> Result<()> {
         opts.path.as_deref(),
     );
 
-    let context = Context::new(data_dir, settings, options)?;
+    let mut context = Context::new(data_dir, settings, options, output)?;
 
     let shell_kind = &*shell::detect(opts.shell);
 
-    let output = match_subcommmand(context, shell_kind, &opts.subcmd, opts.autoload);
+    match_subcommmand(&mut context, shell_kind, &opts.subcmd, opts.autoload);
 
-    let out = std::io::stdout();
-    let mut handle = out.lock();
-    handle.write_all(output.result().as_ref())?;
-    handle.flush()?;
+    context.flush()?;
 
-    let out = std::io::stderr();
-    let mut handle = out.lock();
-    handle.write_all(output.message().as_ref())?;
-    handle.flush()?;
+    if let Some(code) = context.output.error_code() {
+        std::process::exit(code);
+    }
 
     Ok(())
 }
 
 pub fn match_subcommmand(
-    context: Context,
+    context: &mut Context,
     shell_kind: &dyn Shell,
     subcmd: &Option<SubCommand>,
     autoload: bool,
-) -> Output {
-    let mut output = Output::default();
-
+) {
     match subcmd {
         Some(SubCommand::Shell(cmd)) => {
             match cmd.kind {
-                ShellKinds::Init => context.init_shell(shell_kind, &mut output),
+                ShellKinds::Init => context.init_shell(shell_kind),
             };
         }
         Some(SubCommand::Config(cmd)) => {
-            context.set_config(&cmd.values, cmd.global, &mut output);
+            context.set_config(&cmd.values, cmd.global);
         }
-        Some(SubCommand::New) => context.create_saucefile(&mut output),
+        Some(SubCommand::New) => context.create_saucefile(),
         Some(SubCommand::Set(cmd)) => match &cmd.kind {
-            SetKinds::Var(var) => context.set_var(&get_input(&var.values), &mut output),
-            SetKinds::Alias(alias) => context.set_alias(&get_input(&alias.values), &mut output),
-            SetKinds::Function(KeyValuePair { key, value }) => {
-                context.set_function(key, value, &mut output)
-            }
+            SetKinds::Var(var) => context.set_var(&get_input(&var.values)),
+            SetKinds::Alias(alias) => context.set_alias(&get_input(&alias.values)),
+            SetKinds::Function(KeyValuePair { key, value }) => context.set_function(key, value),
         },
-        Some(SubCommand::Edit) => context.edit_saucefile(shell_kind, &mut output),
-        Some(SubCommand::Show) => context.show(shell_kind, &mut output),
-        Some(SubCommand::Clear) => context.clear(shell_kind, &mut output),
-        None => context.execute(shell_kind, &mut output, autoload),
+        Some(SubCommand::Edit) => context.edit_saucefile(shell_kind),
+        Some(SubCommand::Show) => context.show(shell_kind),
+        Some(SubCommand::Clear) => context.clear(shell_kind),
+        None => context.execute(shell_kind, autoload),
     };
-
-    output
 }

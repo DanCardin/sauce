@@ -17,19 +17,22 @@ where
 
 /// Accept data from stdin
 pub fn get_input(values: &[String]) -> Vec<String> {
-    let in_ = std::io::stdin();
-    let mut handle = in_.lock();
-
-    let mut buffer = String::new();
     let mut result = Vec::new();
     result.extend_from_slice(values);
 
-    handle.read_to_string(&mut buffer).unwrap();
-    if !buffer.is_empty() {
-        if let Some(b) = buffer.strip_suffix("\n") {
-            buffer = b.to_string();
+    let mut buffer = String::new();
+
+    if atty::isnt(atty::Stream::Stdin) {
+        std::io::stdin()
+            .read_to_string(&mut buffer)
+            .expect("Could not read stdin");
+
+        if !buffer.is_empty() {
+            if let Some(b) = buffer.strip_suffix("\n") {
+                buffer = b.to_string();
+            }
+            result.push(buffer);
         }
-        result.push(buffer);
     }
 
     result
