@@ -4,10 +4,6 @@ use crate::shell::Shell;
 pub struct Zsh;
 
 impl Shell for Zsh {
-    fn edit(&self, path: &str) -> String {
-        format!("\"$EDITOR\" '{}'", path)
-    }
-
     fn init(&self, binary: &str, autoload_hook: bool) -> String {
         let mut init = format!(
             include_str!("zsh_init.zsh"),
@@ -50,14 +46,16 @@ impl Shell for Zsh {
 #[cfg(test)]
 mod tests {
     mod edit {
+        use std::ffi::OsString;
+
         use super::super::*;
         use pretty_assertions::assert_eq;
 
         #[test]
         fn it_edits_path() {
             let shell = Zsh {};
-            let output = shell.edit("foo/bar");
-            assert_eq!(output, r#""$EDITOR" 'foo/bar'"#);
+            let output = shell.edit(Some(OsString::from("foo")), "foo/bar");
+            assert_eq!(output, Some(r#"foo 'foo/bar'"#.to_string()));
         }
     }
 

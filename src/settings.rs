@@ -4,7 +4,10 @@ use crate::{
     toml::write_document,
 };
 use anyhow::Result;
-use std::{fmt::Display, path::PathBuf};
+use std::{
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 
 use crate::{output::Output, toml::get_document};
 use toml_edit::{Document, Item, Table, Value};
@@ -32,7 +35,7 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn load(config_dir: &PathBuf, output: &mut Output) -> Result<Self> {
+    pub fn load(config_dir: &Path, output: &mut Output) -> Result<Self> {
         let file = config_dir.with_extension("toml");
         let document = get_document(&file, output);
         Ok(Self::from_document(file, &document))
