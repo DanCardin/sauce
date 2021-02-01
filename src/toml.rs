@@ -6,13 +6,10 @@ use std::{
     fs::OpenOptions,
     io::{BufReader, BufWriter, Read},
 };
-use std::{
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::{io::Write, path::Path};
 use toml_edit::Document;
 
-pub fn get_document(path: &PathBuf, output: &mut Output) -> Document {
+pub fn get_document(path: &Path, output: &mut Output) -> Document {
     let content = read_file(path);
     file_contents(path, content, output)
 }
@@ -29,7 +26,7 @@ fn read_file(path: &Path) -> String {
     }
 }
 
-fn file_contents(path: &PathBuf, contents: String, output: &mut Output) -> Document {
+fn file_contents(path: &Path, contents: String, output: &mut Output) -> Document {
     contents.parse::<Document>().unwrap_or_else(|e| {
         output.notify_error(
             ErrorCode::ParseError,
@@ -44,7 +41,7 @@ fn file_contents(path: &PathBuf, contents: String, output: &mut Output) -> Docum
     })
 }
 
-pub fn write_document(file: &PathBuf, document: &Document, output: &mut Output) {
+pub fn write_document(file: &Path, document: &Document, output: &mut Output) {
     if let Ok(file) = OpenOptions::new().write(true).open(&file) {
         let mut buffer = BufWriter::new(file);
         buffer

@@ -289,10 +289,6 @@ project) which would enable things like `sauce --as prod` or
 
 ## Planned Work
 
-- Investigate resolving $EDITOR eagerly
-
-- Config option to disable color
-
 - ability to specify values which should not react to `clear`
 
   This might be useful for environment variables like `PATH` or

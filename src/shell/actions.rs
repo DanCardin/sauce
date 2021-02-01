@@ -1,7 +1,7 @@
 use ansi_term::Style;
 
 use crate::{
-    colors::{BLUE, YELLOW},
+    colors::{BLUE, RED, YELLOW},
     option::Options,
     saucefile::Saucefile,
     shell::{utilities::get_binary, Shell},
@@ -10,8 +10,17 @@ use crate::{
 
 pub fn edit(context: &mut Context, shell: &dyn Shell) {
     let path = &context.sauce_path.to_string_lossy();
-    let result = shell.edit(path);
-    context.output.output(result);
+    context
+        .output
+        .notify(&[BLUE.paint("Opening "), YELLOW.paint(path.as_ref())]);
+
+    if let Some(result) = shell.edit(std::env::var_os("EDITOR"), path) {
+        context.output.output(result);
+    } else {
+        context
+            .output
+            .notify(&[RED.paint("set $EDITOR to enable this command")]);
+    }
 }
 
 pub fn init(context: &mut Context, shell: &dyn Shell) {
@@ -131,13 +140,16 @@ mod tests {
 
         #[test]
         fn it_respects_editor_env_var_zsh() {
+            std::env::set_var("EDITOR", "edit");
+
             let (out, err, mut context) = setup();
             context.sauce_path = Path::new("foo/bar").into();
 
             let shell = TestShell {};
             edit(&mut context, &shell);
-            assert_eq!(out.value(), "edit foo/bar\n");
-            assert_eq!(err.value(), "");
+
+            assert_eq!(out.value(), "edit 'foo/bar'\n");
+            assert_eq!(err.value(), "Opening foo/bar\n");
         }
     }
 
