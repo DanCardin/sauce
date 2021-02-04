@@ -97,7 +97,7 @@ pub struct SetCommand {
 
 #[derive(Clap, Debug)]
 pub enum SetKinds {
-    Var(SetVarKind),
+    Env(SetVarKind),
     Alias(SetVarKind),
     Function(KeyValuePair),
 }

@@ -67,7 +67,7 @@ pub fn match_subcommmand(
         }
         Some(SubCommand::New) => context.create_saucefile(),
         Some(SubCommand::Set(cmd)) => match &cmd.kind {
-            SetKinds::Var(var) => context.set_var(&get_input(&var.values)),
+            SetKinds::Env(env) => context.set_var(&get_input(&env.values)),
             SetKinds::Alias(alias) => context.set_alias(&get_input(&alias.values)),
             SetKinds::Function(KeyValuePair { key, value }) => context.set_function(key, value),
         },

@@ -295,12 +295,9 @@ project) which would enable things like `sauce --as prod` or
   `PROMPT`, which would otherwise be very unsafe to include, unless you
   **never** run `clear`.
 
-- config option to template prompt with `sauce` context.
-
-  Potentially something like `prompt = "(${as}) ${prompt}"` rendering to
-  `(prod) >`.
-
 - ability to subdivide targets by shell
+
+  i.e. allow one to specify `[alias.fish]`.
 
 - `sauce config subshell=false/true` (default `false`)
 
