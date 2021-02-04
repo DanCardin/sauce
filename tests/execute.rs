@@ -69,3 +69,30 @@ fn it_loads_with_autoload_flag_when_autoload_is_enabled() {
         format!("Sourced {}\n", context.sauce_path.to_string_lossy())
     );
 }
+
+#[test]
+fn it_obeys_quiet() {
+    let (_, err, mut context) = setup();
+
+    context.sauce_path = mkpath("./tests/execute_it_runs.toml");
+    context.settings.autoload = Some(true);
+    context.output.set_quiet(true);
+
+    let shell_kind = Zsh {};
+    context.execute(&shell_kind, true);
+    assert_eq!(err.value(), "");
+}
+
+#[test]
+fn it_obeys_verbose() {
+    let (out, err, mut context) = setup();
+
+    context.sauce_path = mkpath("./tests/execute_it_runs.toml");
+    context.output.set_quiet(true);
+    context.output.set_verbose(true);
+
+    let shell_kind = Zsh {};
+    context.execute(&shell_kind, false);
+    assert_eq!(out.value(), err.value());
+    assert_eq!(out.value().contains("export TEST"), true);
+}

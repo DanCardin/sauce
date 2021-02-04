@@ -11,7 +11,8 @@ pub struct Output {
     out: Box<dyn Write>,
     err: Box<dyn Write>,
     color_enabled: bool,
-    // messages: Vec<String>,
+    quiet: bool,
+    verbose: bool,
     code: Option<ErrorCode>,
 }
 
@@ -25,11 +26,19 @@ impl std::fmt::Debug for Output {
 }
 
 impl Output {
-    pub fn new(out: Box<dyn Write>, err: Box<dyn Write>, color_enabled: bool) -> Self {
+    pub fn new(
+        out: Box<dyn Write>,
+        err: Box<dyn Write>,
+        color_enabled: bool,
+        quiet: bool,
+        verbose: bool,
+    ) -> Self {
         Self {
             out,
             err,
             color_enabled,
+            quiet,
+            verbose,
             code: None,
         }
     }
@@ -42,8 +51,23 @@ impl Output {
         result
     }
 
+    pub fn set_quiet(&mut self, value: bool) {
+        self.quiet = value;
+    }
+
+    pub fn set_verbose(&mut self, value: bool) {
+        self.verbose = value;
+    }
+
     pub fn output(&mut self, output: impl Display) -> bool {
-        self.out.write_all(self.format(output).as_bytes()).is_ok()
+        let data = self.format(output);
+        let result = self.out.write_all(data.as_bytes()).is_ok();
+        if self.verbose {
+            self.err
+                .write_all(data.as_bytes())
+                .expect("Couldn't write verbose output");
+        }
+        result
     }
 
     pub fn notify(&mut self, message: &[ANSIString]) -> bool {
@@ -58,7 +82,16 @@ impl Output {
                     .join(""),
             )
         };
-        self.err.write_all(message.as_bytes()).is_ok()
+
+        self.notify_str(&message)
+    }
+
+    pub fn notify_str(&mut self, message: &str) -> bool {
+        if !self.quiet {
+            self.err.write_all(message.as_bytes()).is_ok()
+        } else {
+            true
+        }
     }
 
     pub fn notify_error(&mut self, code: ErrorCode, message: &[ANSIString]) -> bool {
@@ -83,7 +116,8 @@ impl Default for Output {
             out: Box::new(stdout()),
             err: Box::new(stderr()),
             color_enabled: true,
-            // messages: Vec::new(),
+            quiet: false,
+            verbose: false,
             code: None,
         }
     }

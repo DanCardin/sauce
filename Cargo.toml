@@ -1,19 +1,19 @@
 [package]
-name = 'sauce'
-version = '0.5.1'
-authors = ['Dan Cardin <ddcardin@gmail.com>']
-edition = '2018'
-description = 'A tool for managing directory-specific state.'
-documentation = 'https://github.com/DanCardin/sauce'
-homepage = 'https://github.com/DanCardin/sauce'
-repository = 'https://github.com/DanCardin/sauce'
-readme = 'README.md'
+name = "sauce"
+version = "0.5.1"
+authors = ["Dan Cardin <ddcardin@gmail.com>"]
+edition = "2018"
+description = "A tool for managing directory-specific state."
+documentation = "https://github.com/DanCardin/sauce"
+homepage = "https://github.com/DanCardin/sauce"
+repository = "https://github.com/DanCardin/sauce"
+readme = "README.md"
 keywords = [
-    'source',
-    'shell',
-    'direnv',
+    "source",
+    "shell",
+    "direnv",
 ]
-categories = ['command-line-utilities']
+categories = ["command-line-utilities"]
 license = "Apache-2.0"
 
 [features]
@@ -23,29 +23,32 @@ dev = []
 
 [dependencies]
 ansi_term = "0.12"
-anyhow = '1.0.35'
+anyhow = "1.0.35"
 atty = "0.2.14"
-etcetera = '0.3.2'
-glob = '0.3.0'
+etcetera = "0.3.2"
+glob = "0.3.0"
 itertools = "0.10.0"
-snailquote = '0.3.0'
-toml = '0.5.7'
-toml_edit = '0.2.0'
+snailquote = "0.3.0"
+subprocess = "0.2.6"
+toml = "0.5.7"
+toml_edit = "0.2.0"
 
 [dependencies.clap]
-version = '3.0.0-beta.2'
+version = "3.0.0-beta.2"
 features = [
-    'suggestions',
-    'color',
+    "suggestions",
+    "color",
 ]
 
 [dependencies.indexmap]
-version = '1.6.1'
-features = ['serde-1']
+version = "1.6.1"
+features = ["serde-1"]
 
 [dependencies.serde]
-version = '1.0'
-features = ['derive']
+version = "1.0"
+features = ["derive"]
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
+predicates = "1.0.7"
+assert_cmd = "1.0.3"
