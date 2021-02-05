@@ -29,13 +29,27 @@ pub fn init(context: &mut Context, shell: &dyn Shell) {
     context.output.output(result);
 }
 
-pub fn execute_shell_command(context: &mut Context, shell: &dyn Shell, command: &str) {
-    let result = subprocess::Exec::cmd(shell.name())
-        .arg("-i")
-        .arg("-c")
-        .arg(format!("{}; {}", clap::crate_name!(), command))
-        .stdout(subprocess::Redirection::Merge)
-        .join();
+pub fn execute_shell(context: &mut Context, shell: &dyn Shell, command: Option<&str>) {
+    let result = if let Some(command) = command {
+        subprocess::Exec::cmd(shell.name())
+            .arg("-i")
+            .arg("-c")
+            .arg(format!("{}; {}", clap::crate_name!(), command))
+            .stdout(subprocess::Redirection::Merge)
+            .join()
+    } else {
+        let mut process = subprocess::Exec::cmd(shell.name())
+            .arg("-i")
+            .stdout(subprocess::Redirection::Merge)
+            .stdin(subprocess::Redirection::Pipe)
+            .popen()
+            .expect("Unable to start subprocess");
+
+        process
+            .communicate(Some(&format!("{}", clap::crate_name!())))
+            .unwrap();
+        process.wait()
+    };
 
     if let Err(error) = result {
         context

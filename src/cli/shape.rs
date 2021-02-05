@@ -80,11 +80,11 @@ pub enum SubCommand {
 pub struct ShellCommand {
     /// the kind of thing to add
     #[clap(subcommand)]
-    pub kind: ShellKinds,
+    pub kind: Option<ShellSubcommandKinds>,
 }
 
 #[derive(Clap, Debug)]
-pub enum ShellKinds {
+pub enum ShellSubcommandKinds {
     Init,
     Exec(ExecCommand),
 }

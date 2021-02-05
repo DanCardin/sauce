@@ -7,7 +7,7 @@ use crate::Context;
 use anyhow::Result;
 use etcetera::app_strategy::{AppStrategy, AppStrategyArgs, Xdg};
 
-use super::shape::{CliOptions, KeyValuePair, SetKinds, ShellKinds, SubCommand};
+use super::shape::{CliOptions, KeyValuePair, SetKinds, ShellSubcommandKinds, SubCommand};
 
 pub fn run() -> Result<()> {
     let opts: CliOptions = CliOptions::parse();
@@ -63,10 +63,11 @@ pub fn match_subcommmand(
     match subcmd {
         Some(SubCommand::Shell(cmd)) => {
             match cmd.kind {
-                ShellKinds::Init => context.init_shell(shell_kind),
-                ShellKinds::Exec(command) => {
-                    context.execute_shell_command(shell_kind, &*command.command)
+                Some(ShellSubcommandKinds::Init) => context.init_shell(shell_kind),
+                Some(ShellSubcommandKinds::Exec(command)) => {
+                    context.execute_shell(shell_kind, Some(&*command.command))
                 }
+                None => context.execute_shell(shell_kind, None),
             };
         }
         Some(SubCommand::Config(cmd)) => {

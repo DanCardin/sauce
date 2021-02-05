@@ -82,8 +82,8 @@ impl<'a> Context<'a> {
         actions::init(self, shell_kind)
     }
 
-    pub fn execute_shell_command(&mut self, shell_kind: &dyn Shell, command: &str) {
-        actions::execute_shell_command(self, shell_kind, command)
+    pub fn execute_shell(&mut self, shell_kind: &dyn Shell, command: Option<&str>) {
+        actions::execute_shell(self, shell_kind, command)
     }
 
     pub fn create_saucefile(&mut self) {
