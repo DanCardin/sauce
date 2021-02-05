@@ -11,17 +11,22 @@ pub struct CliOptions {
     #[clap(long)]
     pub shell: ShellName,
 
-    /// Sets a custom config file. Could have been an Option<T> with no default too
-    #[clap(short, long)]
-    pub config: Option<String>,
+    /// Supplied during autoload sequence. Not generally useful to end-users.
+    #[clap(long)]
+    pub autoload: bool,
 
-    ///
+    /// Valid options: always, never, auto. Auto (default) will attempt to autodetect
+    /// whether it should output color based on the existence of a tty.
     #[clap(long, default_value = "auto")]
     pub color: ColorStrategy,
 
-    /// A level of verbosity, and can be used multiple times
-    #[clap(short, long, parse(from_occurrences))]
-    pub verbose: i32,
+    /// Enables verbose output. This causes all stdout to be mirrored to stderr.
+    #[clap(short, long)]
+    pub verbose: bool,
+
+    /// Disables normal messaging output after a command is executed.
+    #[clap(short, long)]
+    pub quiet: bool,
 
     /// The path which should be sauce'd. Defaults to the current directory.
     #[clap(short, long)]
@@ -40,10 +45,6 @@ pub struct CliOptions {
     /// targets, but also can use the form "<target>:<filter>" to be more specific.
     #[clap(short, long)]
     pub filter: Option<String>,
-
-    /// Supplied during autoload sequence. Not generally useful to end-users.
-    #[clap(long)]
-    pub autoload: bool,
 
     #[clap(subcommand)]
     pub subcmd: Option<SubCommand>,
@@ -97,7 +98,7 @@ pub struct SetCommand {
 
 #[derive(Clap, Debug)]
 pub enum SetKinds {
-    Var(SetVarKind),
+    Env(SetVarKind),
     Alias(SetVarKind),
     Function(KeyValuePair),
 }

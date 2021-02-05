@@ -25,7 +25,7 @@ pub fn run() -> Result<()> {
     let err = Box::new(std::io::stderr());
 
     let color_enabled = shell::should_be_colored(opts.color);
-    let mut output = Output::new(out, err, color_enabled);
+    let mut output = Output::new(out, err, color_enabled, opts.quiet, opts.verbose);
 
     let settings = Settings::load(&config_dir, &mut output)?;
     let options = Options::new(
@@ -39,7 +39,7 @@ pub fn run() -> Result<()> {
 
     let shell_kind = &*shell::detect(opts.shell);
 
-    match_subcommmand(&mut context, shell_kind, &opts.subcmd, opts.autoload);
+    match_subcommmand(&mut context, shell_kind, opts.subcmd, opts.autoload);
 
     context.flush()?;
 
@@ -53,7 +53,7 @@ pub fn run() -> Result<()> {
 pub fn match_subcommmand(
     context: &mut Context,
     shell_kind: &dyn Shell,
-    subcmd: &Option<SubCommand>,
+    subcmd: Option<SubCommand>,
     autoload: bool,
 ) {
     match subcmd {
@@ -67,7 +67,7 @@ pub fn match_subcommmand(
         }
         Some(SubCommand::New) => context.create_saucefile(),
         Some(SubCommand::Set(cmd)) => match &cmd.kind {
-            SetKinds::Var(var) => context.set_var(&get_input(&var.values)),
+            SetKinds::Env(env) => context.set_var(&get_input(&env.values)),
             SetKinds::Alias(alias) => context.set_alias(&get_input(&alias.values)),
             SetKinds::Function(KeyValuePair { key, value }) => context.set_function(key, value),
         },

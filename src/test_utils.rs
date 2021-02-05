@@ -81,7 +81,13 @@ pub fn setup<'a>() -> (MockWriter, MockWriter, Context<'a>) {
     let err = MockWriter::default();
 
     let context = Context {
-        output: Output::new(Box::new(out.clone()), Box::new(err.clone()), false),
+        output: Output::new(
+            Box::new(out.clone()),
+            Box::new(err.clone()),
+            false,
+            false,
+            false,
+        ),
         ..Default::default()
     };
 
