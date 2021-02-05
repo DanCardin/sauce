@@ -29,3 +29,12 @@ fn it_runs_sauce_show_env() {
     let assert = cmd.args(&["--shell", "bash", "show", "env"]).assert();
     assert.success();
 }
+
+#[test]
+fn it_runs_shell_exec() {
+    let mut cmd = Command::cargo_bin("sauce").unwrap();
+    let assert = cmd
+        .args(&["--shell", "bash", "shell", "exec", "'echo foo'"])
+        .assert();
+    assert.success().stderr(predicates::str::contains("foo"));
+}

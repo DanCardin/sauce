@@ -4,6 +4,10 @@ use crate::shell::Shell;
 pub struct Fish;
 
 impl Shell for Fish {
+    fn name(&self) -> &'static str {
+        "fish"
+    }
+
     fn init(&self, binary: &str, autoload_hook: bool) -> String {
         let mut init = format!(
             include_str!("fish_init.fish"),

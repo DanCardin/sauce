@@ -9,6 +9,8 @@ pub use kinds::{Bash, Fish, Zsh};
 pub use utilities::{detect, should_be_colored, ColorStrategy, ShellName};
 
 pub trait Shell {
+    fn name(&self) -> &'static str;
+
     fn edit(&self, editor: Option<OsString>, path: &str) -> Option<String> {
         editor.map(|e| format!("{} '{}'", e.to_string_lossy(), path))
     }
