@@ -4,6 +4,10 @@ use crate::shell::Shell;
 pub struct Bash;
 
 impl Shell for Bash {
+    fn name(&self) -> &'static str {
+        "bash"
+    }
+
     fn init(&self, binary: &str, autoload_hook: bool) -> String {
         let mut init = format!(
             include_str!("bash_init.sh"),

@@ -15,3 +15,12 @@ fn it_runs_sauce() {
     let assert = cmd.args(&["--shell", "bash"]).assert();
     assert.success();
 }
+
+#[test]
+fn it_runs_shell_exec() {
+    let mut cmd = Command::cargo_bin("sauce").unwrap();
+    let assert = cmd
+        .args(&["--shell", "bash", "shell", "exec", "'echo foo'"])
+        .assert();
+    assert.success().stderr(predicates::str::contains("foo"));
+}

@@ -4,6 +4,10 @@ use crate::shell::Shell;
 pub struct Zsh;
 
 impl Shell for Zsh {
+    fn name(&self) -> &'static str {
+        "zsh"
+    }
+
     fn init(&self, binary: &str, autoload_hook: bool) -> String {
         let mut init = format!(
             include_str!("zsh_init.zsh"),

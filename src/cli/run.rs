@@ -14,8 +14,12 @@ pub fn run() -> Result<()> {
 
     let strat_args = AppStrategyArgs {
         top_level_domain: "com".to_string(),
-        author: "dancardin".to_string(),
-        app_name: "sauce".to_string(),
+        author: clap::crate_authors!()
+            .split(':')
+            .next()
+            .unwrap_or("")
+            .to_string(),
+        app_name: clap::crate_name!().to_string(),
     };
     let strategy = Xdg::new(strat_args)?;
     let data_dir = strategy.data_dir();
@@ -60,6 +64,9 @@ pub fn match_subcommmand(
         Some(SubCommand::Shell(cmd)) => {
             match cmd.kind {
                 ShellKinds::Init => context.init_shell(shell_kind),
+                ShellKinds::Exec(command) => {
+                    context.execute_shell_command(shell_kind, &*command.command)
+                }
             };
         }
         Some(SubCommand::Config(cmd)) => {

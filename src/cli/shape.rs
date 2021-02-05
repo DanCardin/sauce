@@ -86,6 +86,15 @@ pub struct ShellCommand {
 #[derive(Clap, Debug)]
 pub enum ShellKinds {
     Init,
+    Exec(ExecCommand),
+}
+
+/// Sets to the sauce file
+#[derive(Clap, Debug)]
+pub struct ExecCommand {
+    /// The command to run
+    #[clap()]
+    pub command: String,
 }
 
 /// Sets to the sauce file

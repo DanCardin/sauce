@@ -15,6 +15,10 @@ pub fn mkpath(path: &str) -> PathBuf {
 pub struct TestShell;
 
 impl Shell for TestShell {
+    fn name(&self) -> &'static str {
+        "test"
+    }
+
     fn init(&self, binary: &str, autoload_hook: bool) -> String {
         if autoload_hook {
             format!("{} {}", binary, "--autoload")

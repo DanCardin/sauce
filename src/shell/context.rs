@@ -82,6 +82,10 @@ impl<'a> Context<'a> {
         actions::init(self, shell_kind)
     }
 
+    pub fn execute_shell_command(&mut self, shell_kind: &dyn Shell, command: &str) {
+        actions::execute_shell_command(self, shell_kind, command)
+    }
+
     pub fn create_saucefile(&mut self) {
         let parent = self.sauce_path.parent().unwrap();
         if std::fs::create_dir_all(parent).is_err() {

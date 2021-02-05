@@ -29,6 +29,21 @@ pub fn init(context: &mut Context, shell: &dyn Shell) {
     context.output.output(result);
 }
 
+pub fn execute_shell_command(context: &mut Context, shell: &dyn Shell, command: &str) {
+    let result = subprocess::Exec::cmd(shell.name())
+        .arg("-i")
+        .arg("-c")
+        .arg(format!("{}; {}", clap::crate_name!(), command))
+        .stdout(subprocess::Redirection::Merge)
+        .join();
+
+    if let Err(error) = result {
+        context
+            .output
+            .notify(&[RED.bold().paint(error.to_string())]);
+    }
+}
+
 pub fn clear(context: &mut Context, shell: &dyn Shell, mut saucefile: Saucefile) {
     let options = &context.options;
     let output = &mut context.output;
