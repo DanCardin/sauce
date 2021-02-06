@@ -15,6 +15,10 @@ pub struct CliOptions {
     #[clap(long)]
     pub autoload: bool,
 
+    /// Only **show** the intended output of the command rather than executing it.
+    #[clap(long)]
+    pub show: bool,
+
     /// Valid options: always, never, auto. Auto (default) will attempt to autodetect
     /// whether it should output color based on the existence of a tty.
     #[clap(long, default_value = "auto")]
@@ -71,14 +75,13 @@ pub enum SubCommand {
     Config(ConfigCommand),
     New,
     Edit,
-    Show,
+    Show(ShowCommand),
     Clear,
 }
 
 /// Adds to the sauce file
 #[derive(Clap, Debug)]
 pub struct ShellCommand {
-    /// the kind of thing to add
     #[clap(subcommand)]
     pub kind: ShellKinds,
 }
@@ -91,7 +94,6 @@ pub enum ShellKinds {
 /// Sets to the sauce file
 #[derive(Clap, Debug)]
 pub struct SetCommand {
-    /// the kind of thing to set
     #[clap(subcommand)]
     pub kind: SetKinds,
 }
@@ -123,4 +125,18 @@ pub struct ConfigCommand {
 
     #[clap(parse(try_from_str = crate::cli::utilities::parse_key_val))]
     pub values: Vec<(String, String)>,
+}
+
+/// Display the given category of key-value pairs
+#[derive(Clap, Debug)]
+pub struct ShowCommand {
+    #[clap(subcommand)]
+    pub kind: ShowKinds,
+}
+
+#[derive(Clap, Debug)]
+pub enum ShowKinds {
+    Env,
+    Alias,
+    Function,
 }

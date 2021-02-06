@@ -289,6 +289,8 @@ project) which would enable things like `sauce --as prod` or
 
 ## Planned Work
 
+- Invoke autoload on shell startup instead of **just** on explicit chpwd
+
 - ability to specify values which should not react to `clear`
 
   This might be useful for environment variables like `PATH` or

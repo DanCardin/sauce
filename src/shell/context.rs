@@ -10,6 +10,7 @@ use crate::{
     saucefile::Saucefile,
     settings::Settings,
     shell::{actions, Shell},
+    target::Target,
 };
 
 #[derive(Debug)]
@@ -123,9 +124,9 @@ impl<'a> Context<'a> {
         actions::edit(self, shell_kind);
     }
 
-    pub fn show(&mut self, shell_kind: &dyn Shell) {
+    pub fn show(&mut self, target: Target) {
         let saucefile = self.saucefile();
-        actions::show(self, shell_kind, saucefile);
+        actions::show(self, target, saucefile);
     }
 
     pub fn clear(&mut self, shell_kind: &dyn Shell) {

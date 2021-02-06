@@ -1,4 +1,6 @@
+use crate::colors::{TABLE_BLUE, TABLE_YELLOW};
 use anyhow::Result;
+use comfy_table::{Attribute, Cell, ContentArrangement, Row, Table};
 use std::{
     fmt::Display,
     io::{stderr, stdout, Write},
@@ -10,37 +12,64 @@ use ansi_term::{ANSIString, ANSIStrings};
 pub struct Output {
     out: Box<dyn Write>,
     err: Box<dyn Write>,
-    color_enabled: bool,
+    color: bool,
     quiet: bool,
     verbose: bool,
+    show: bool,
     code: Option<ErrorCode>,
 }
 
 impl std::fmt::Debug for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Output")
-            .field("color_enabled", &self.color_enabled)
+            .field("color", &self.color)
+            .field("quiet", &self.code)
+            .field("verbose", &self.code)
+            .field("show", &self.code)
             .field("code", &self.code)
             .finish()
     }
 }
 
 impl Output {
-    pub fn new(
-        out: Box<dyn Write>,
-        err: Box<dyn Write>,
-        color_enabled: bool,
-        quiet: bool,
-        verbose: bool,
-    ) -> Self {
+    pub fn new(out: Box<dyn Write>, err: Box<dyn Write>) -> Self {
         Self {
             out,
             err,
-            color_enabled,
-            quiet,
-            verbose,
+            color: false,
+            quiet: false,
+            verbose: false,
+            show: false,
             code: None,
         }
+    }
+
+    pub fn quiet(mut self, value: bool) -> Self {
+        self.set_quiet(value);
+        self
+    }
+
+    pub fn set_quiet(&mut self, value: bool) {
+        self.quiet = value;
+    }
+
+    pub fn verbose(mut self, value: bool) -> Self {
+        self.set_verbose(value);
+        self
+    }
+
+    pub fn set_verbose(&mut self, value: bool) {
+        self.verbose = value;
+    }
+
+    pub fn color(mut self, value: bool) -> Self {
+        self.color = value;
+        self
+    }
+
+    pub fn only_show(mut self, value: bool) -> Self {
+        self.show = value;
+        self
     }
 
     fn format(&self, output: impl Display) -> String {
@@ -51,17 +80,55 @@ impl Output {
         result
     }
 
-    pub fn set_quiet(&mut self, value: bool) {
-        self.quiet = value;
-    }
+    pub fn format_table(
+        &self,
+        headers: &[&str],
+        data: Vec<Vec<&str>>,
+        preset: Option<&str>,
+    ) -> String {
+        let mut table = Table::new();
+        table.set_content_arrangement(ContentArrangement::Dynamic);
+        if let Some(preset) = preset {
+            table.load_preset(preset);
+        } else {
+            table.load_preset("││──╞═╪╡│    ┬┴┌┐└┘");
+        }
+        table.set_header(headers);
+        table.enforce_styling();
 
-    pub fn set_verbose(&mut self, value: bool) {
-        self.verbose = value;
+        let (width, _) = crossterm::terminal::size().unwrap_or((100, 0));
+        table.set_table_width(width);
+
+        for data_row in data {
+            let mut row = Row::new();
+            for (i, data_cell) in data_row.iter().enumerate() {
+                let mut cell = Cell::new(data_cell);
+
+                if self.color {
+                    if i == 0 {
+                        cell = cell.add_attribute(Attribute::Bold).fg(TABLE_BLUE);
+                    } else {
+                        cell = cell.fg(TABLE_YELLOW);
+                    }
+                }
+                row.add_cell(cell);
+            }
+            table.add_row(row);
+        }
+
+        self.format(table)
     }
 
     pub fn output(&mut self, output: impl Display) -> bool {
         let data = self.format(output);
-        let result = self.out.write_all(data.as_bytes()).is_ok();
+
+        let stream = if self.show {
+            &mut self.err
+        } else {
+            &mut self.out
+        };
+        let result = stream.write_all(data.as_bytes()).is_ok();
+
         if self.verbose {
             self.err
                 .write_all(data.as_bytes())
@@ -71,7 +138,7 @@ impl Output {
     }
 
     pub fn notify(&mut self, message: &[ANSIString]) -> bool {
-        let message = if self.color_enabled {
+        let message = if self.color {
             self.format(ANSIStrings(message))
         } else {
             self.format(
@@ -115,9 +182,10 @@ impl Default for Output {
         Self {
             out: Box::new(stdout()),
             err: Box::new(stderr()),
-            color_enabled: true,
+            color: true,
             quiet: false,
             verbose: false,
+            show: false,
             code: None,
         }
     }
