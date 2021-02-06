@@ -25,7 +25,7 @@ impl Saucefile {
         };
 
         let paths = context.cascade_paths();
-        let mut paths = paths.iter().peekable();
+        let mut paths = paths.peekable();
         while let Some(path) = paths.next() {
             if !path.is_file() {
                 continue;

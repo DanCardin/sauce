@@ -1,6 +1,5 @@
 use crate::{
     colors::{BLUE, RED, YELLOW},
-    option::Options,
     saucefile::Saucefile,
     shell::{utilities::get_binary, Shell},
     target::Target,
@@ -46,13 +45,13 @@ pub fn execute_shell_command(context: &mut Context, shell: &dyn Shell, command: 
 pub fn clear(context: &mut Context, shell: &dyn Shell, mut saucefile: Saucefile) {
     let options = &context.options;
     let output = &mut context.output;
-    output.output(render_vars(&mut saucefile, options, |k, _| {
+    output.output(render_items(saucefile.vars(options), |k, _| {
         shell.unset_var(k)
     }));
-    output.output(render_aliases(&mut saucefile, options, |k, _| {
+    output.output(render_items(saucefile.aliases(options), |k, _| {
         shell.unset_alias(k)
     }));
-    output.output(render_functions(&mut saucefile, options, |k, _| {
+    output.output(render_items(saucefile.functions(options), |k, _| {
         shell.unset_function(k)
     }));
     output.notify(&[BLUE.bold().paint("Cleared your sauce")]);
@@ -106,13 +105,13 @@ pub fn execute(
     let options = &context.options;
     let output = &mut context.output;
 
-    output.output(render_vars(&mut saucefile, options, |k, v| {
+    output.output(render_items(saucefile.vars(options), |k, v| {
         shell.set_var(k, v)
     }));
-    output.output(render_aliases(&mut saucefile, options, |k, v| {
+    output.output(render_items(saucefile.aliases(options), |k, v| {
         shell.set_alias(k, v)
     }));
-    output.output(render_functions(&mut saucefile, options, |k, v| {
+    output.output(render_items(saucefile.functions(options), |k, v| {
         shell.set_function(k, v)
     }));
 
@@ -122,39 +121,17 @@ pub fn execute(
     ]);
 }
 
-fn render_vars<F>(saucefile: &mut Saucefile, options: &Options, mut format_row: F) -> String
+fn render_items<F>(items: Vec<(&str, String)>, mut format_row: F) -> String
 where
     F: FnMut(&str, &str) -> String,
 {
-    saucefile
-        .vars(options)
+    items
         .iter()
         .map(|(k, v)| format_row(k, v))
-        .map(|v| format!("{};\n", v))
-        .collect()
-}
-
-fn render_aliases<F>(saucefile: &mut Saucefile, options: &Options, mut format_row: F) -> String
-where
-    F: FnMut(&str, &str) -> String,
-{
-    saucefile
-        .aliases(options)
-        .iter()
-        .map(|(k, v)| format_row(k, v))
-        .map(|v| format!("{};\n", v))
-        .collect()
-}
-
-fn render_functions<F>(saucefile: &mut Saucefile, options: &Options, mut format_row: F) -> String
-where
-    F: FnMut(&str, &str) -> String,
-{
-    saucefile
-        .functions(options)
-        .iter()
-        .map(|(k, v)| format_row(k, v))
-        .map(|v| format!("{};\n", v))
+        .map(|mut v| {
+            v += ";\n";
+            v
+        })
         .collect()
 }
 

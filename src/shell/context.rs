@@ -1,7 +1,7 @@
 use anyhow::Result;
 use etcetera::home_dir;
+use std::env;
 use std::path::PathBuf;
-use std::{env, ops::Deref};
 
 use crate::{
     colors::{BLUE, RED, YELLOW},
@@ -143,28 +143,28 @@ impl<'a> Context<'a> {
         actions::execute(self, shell_kind, saucefile, autoload);
     }
 
-    pub fn cascade_paths(&self) -> Vec<PathBuf> {
-        if self.sauce_path == self.data_dir.with_extension("toml") {
-            return vec![self.sauce_path.clone()];
-        }
-
+    pub fn cascade_paths(&self) -> impl Iterator<Item = PathBuf> {
         self.sauce_path
             .ancestors()
-            .filter(|p| p.strip_prefix(&self.data_dir).is_ok())
+            .filter(|p| {
+                if self.data_dir.with_extension("toml") == *p {
+                    true
+                } else {
+                    p.strip_prefix(&self.data_dir).is_ok()
+                }
+            })
             .map(|p| p.with_extension("toml"))
             .collect::<Vec<PathBuf>>()
             .into_iter()
             .rev()
-            .collect()
     }
 
     pub fn set_var<T: AsRef<str>>(&mut self, values: &[T]) {
         let mut saucefile = self.saucefile();
         for values in values.iter() {
-            let parts: Vec<&str> = values.as_ref().splitn(2, '=').collect();
-            let var = parts[0];
-
-            let value = parts.get(1).map(Deref::deref).unwrap_or("");
+            let mut parts = values.as_ref().splitn(2, '=');
+            let var = parts.next().unwrap_or("");
+            let value = parts.next().unwrap_or("");
 
             saucefile.set_var(var, value);
             self.output.notify(&[
@@ -180,9 +180,9 @@ impl<'a> Context<'a> {
     pub fn set_alias<T: AsRef<str>>(&mut self, values: &[T]) {
         let mut saucefile = self.saucefile();
         for values in values.iter() {
-            let parts: Vec<&str> = values.as_ref().splitn(2, '=').collect();
-            let var = parts[0];
-            let value = if parts.len() > 1 { parts[1] } else { "" };
+            let mut parts = values.as_ref().splitn(2, '=');
+            let var = parts.next().unwrap_or("");
+            let value = parts.next().unwrap_or("");
             saucefile.set_alias(var, value);
             self.output.notify(&[
                 BLUE.paint("Set "),
@@ -230,6 +230,46 @@ impl<'a> Default for Context<'a> {
             path: PathBuf::new(),
             sauce_path: PathBuf::new(),
             output: Output::default(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod cascade_paths {
+        use super::super::*;
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[test]
+        fn test_home() {
+            let mut context = Context::default();
+            context.data_dir = "~/.local/share/sauce".into();
+            context.sauce_path = "~/.local/share/sauce".into();
+
+            let paths: Vec<_> = context.cascade_paths().collect();
+
+            let expected: Vec<PathBuf> = vec!["~/.local/share/sauce.toml".into()];
+            assert_eq!(paths, expected);
+        }
+
+        #[test]
+        fn test_nested_subdir() {
+            let mut context = Context::default();
+            context.data_dir = "~/.local/share/sauce".into();
+            context.sauce_path = "~/.local/share/sauce/meow/meow/kitty.toml".into();
+
+            let paths: Vec<_> = context.cascade_paths().collect();
+
+            let expected: Vec<PathBuf> = vec![
+                "~/.local/share/sauce.toml".into(),
+                "~/.local/share/sauce/meow.toml".into(),
+                "~/.local/share/sauce/meow/meow.toml".into(),
+                "~/.local/share/sauce/meow/meow/kitty.toml".into(),
+            ];
+            assert_eq!(paths, expected);
         }
     }
 }
