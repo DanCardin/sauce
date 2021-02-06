@@ -5,6 +5,7 @@ pub mod output;
 pub mod saucefile;
 pub mod settings;
 pub mod shell;
+pub mod target;
 mod toml;
 
 pub mod test_utils;

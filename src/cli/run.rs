@@ -1,13 +1,13 @@
-use crate::cli::utilities::get_input;
 use crate::option::Options;
 use crate::output::Output;
 use crate::settings::Settings;
 use crate::shell::{self, Shell};
 use crate::Context;
+use crate::{cli::utilities::get_input, target::Target};
 use anyhow::Result;
 use etcetera::app_strategy::{AppStrategy, AppStrategyArgs, Xdg};
 
-use super::shape::{CliOptions, KeyValuePair, SetKinds, ShellKinds, SubCommand};
+use super::shape::{CliOptions, KeyValuePair, SetKinds, ShellKinds, ShowKinds, SubCommand};
 
 pub fn run() -> Result<()> {
     let opts: CliOptions = CliOptions::parse();
@@ -24,8 +24,11 @@ pub fn run() -> Result<()> {
     let out = Box::new(std::io::stdout());
     let err = Box::new(std::io::stderr());
 
-    let color_enabled = shell::should_be_colored(opts.color);
-    let mut output = Output::new(out, err, color_enabled, opts.quiet, opts.verbose);
+    let mut output = Output::new(out, err)
+        .quiet(opts.quiet)
+        .verbose(opts.verbose)
+        .color(shell::should_be_colored(opts.color))
+        .only_show(opts.show);
 
     let settings = Settings::load(&config_dir, &mut output)?;
     let options = Options::new(
@@ -72,7 +75,11 @@ pub fn match_subcommmand(
             SetKinds::Function(KeyValuePair { key, value }) => context.set_function(key, value),
         },
         Some(SubCommand::Edit) => context.edit_saucefile(shell_kind),
-        Some(SubCommand::Show) => context.show(shell_kind),
+        Some(SubCommand::Show(show)) => match show.kind {
+            ShowKinds::Env => context.show(Target::EnvVar),
+            ShowKinds::Function => context.show(Target::Function),
+            ShowKinds::Alias => context.show(Target::Alias),
+        },
         Some(SubCommand::Clear) => context.clear(shell_kind),
         None => context.execute(shell_kind, autoload),
     };

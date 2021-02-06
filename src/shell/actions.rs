@@ -1,10 +1,9 @@
-use ansi_term::Style;
-
 use crate::{
     colors::{BLUE, RED, YELLOW},
     option::Options,
     saucefile::Saucefile,
     shell::{utilities::get_binary, Shell},
+    target::Target,
     Context,
 };
 
@@ -44,16 +43,32 @@ pub fn clear(context: &mut Context, shell: &dyn Shell, mut saucefile: Saucefile)
     output.notify(&[BLUE.bold().paint("Cleared your sauce")]);
 }
 
-pub fn show(context: &mut Context, shell: &dyn Shell, mut saucefile: Saucefile) {
-    let options = &context.options;
-    let output = &mut context.output;
+pub fn show(context: &mut Context, target: Target, mut saucefile: Saucefile) {
+    let header = match target {
+        Target::EnvVar => &["Variable", "Value"],
+        Target::Alias => &["Alias", "Value"],
+        Target::Function => &["Function", "Body"],
+    };
 
-    let vars = render_vars(&mut saucefile, options, |k, v| shell.set_var(k, v));
-    let aliases = render_aliases(&mut saucefile, options, |k, v| shell.set_alias(k, v));
-    let functions = render_functions(&mut saucefile, options, |k, v| shell.set_function(k, v));
-    output.notify(&[Style::default().paint(vars)]);
-    output.notify(&[Style::default().paint(aliases)]);
-    output.notify(&[Style::default().paint(functions)]);
+    let options = &context.options;
+    let pairs = match target {
+        Target::EnvVar => saucefile.vars(options),
+        Target::Alias => saucefile.aliases(options),
+        Target::Function => saucefile.functions(options),
+    };
+    let preset = match target {
+        Target::EnvVar => None,
+        Target::Alias => None,
+        Target::Function => Some("││──╞═╪╡│ │││┬┴┌┐└┘"),
+    };
+
+    let cells = pairs
+        .iter()
+        .map(|(k, v)| vec![<&str>::clone(k), v])
+        .collect::<Vec<_>>();
+    let table = context.output.format_table(header, cells, preset);
+
+    context.output.notify_str(&table);
 }
 
 pub fn execute(
@@ -131,6 +146,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::test_utils::{setup, TestShell};
+    use indoc::indoc;
     use std::path::Path;
 
     mod edit {
@@ -209,20 +225,72 @@ mod tests {
         use pretty_assertions::assert_eq;
 
         #[test]
-        fn it_shows() {
-            let shell = TestShell {};
+        fn it_shows_env_vars() {
             let (out, err, mut context) = setup();
             let mut saucefile = Saucefile::default();
             saucefile.set_var("var", "varvalue");
-            saucefile.set_var("alias", "aliasvalue");
-            saucefile.set_var("function", "functionvalue");
 
-            show(&mut context, &shell, saucefile);
+            show(&mut context, Target::EnvVar, saucefile);
 
             assert_eq!(out.value(), "");
             assert_eq!(
                 err.value(),
-                "export var=varvalue;\nexport alias=aliasvalue;\nexport function=functionvalue;\n\n"
+                indoc!(
+                    "
+                    ┌──────────┬──────────┐
+                    │ Variable │ Value    │
+                    ╞══════════╪══════════╡
+                    │ var      │ varvalue │
+                    └──────────┴──────────┘
+                    "
+                )
+            );
+        }
+
+        #[test]
+        fn it_shows_aliases() {
+            let (out, err, mut context) = setup();
+            let mut saucefile = Saucefile::default();
+            saucefile.set_alias("alias", "aliasvalue");
+
+            show(&mut context, Target::Alias, saucefile);
+
+            assert_eq!(out.value(), "");
+            assert_eq!(
+                err.value(),
+                indoc!(
+                    "
+                    ┌───────┬────────────┐
+                    │ Alias │ Value      │
+                    ╞═══════╪════════════╡
+                    │ alias │ aliasvalue │
+                    └───────┴────────────┘
+                    "
+                )
+            );
+        }
+
+        #[test]
+        fn it_shows_functions() {
+            let (out, err, mut context) = setup();
+            let mut saucefile = Saucefile::default();
+            saucefile.set_function("function", "git add\ngit commit");
+
+            show(&mut context, Target::Function, saucefile);
+
+            assert_eq!(out.value(), "");
+            assert_eq!(
+                err.value(),
+                indoc!(
+                    "
+                    ┌──────────┬────────────┐
+                    │ Function │ Body       │
+                    ╞══════════╪════════════╡
+                    │ function │ git add    │
+                    │          │ git commit │
+                    └──────────┴────────────┘
+                    "
+                )
             );
         }
     }

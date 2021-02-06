@@ -15,3 +15,17 @@ fn it_runs_sauce() {
     let assert = cmd.args(&["--shell", "bash"]).assert();
     assert.success();
 }
+
+#[test]
+fn it_runs_sauce_in_show_mode() {
+    let mut cmd = Command::cargo_bin("sauce").unwrap();
+    let assert = cmd.args(&["--shell", "bash", "--show"]).assert();
+    assert.success();
+}
+
+#[test]
+fn it_runs_sauce_show_env() {
+    let mut cmd = Command::cargo_bin("sauce").unwrap();
+    let assert = cmd.args(&["--shell", "bash", "show", "env"]).assert();
+    assert.success();
+}
