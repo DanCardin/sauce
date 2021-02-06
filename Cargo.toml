@@ -1,6 +1,6 @@
 [package]
 name = "sauce"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
 edition = "2018"
 description = "A tool for managing directory-specific state."
@@ -26,7 +26,7 @@ ansi_term = "0.12"
 anyhow = "1.0.35"
 atty = "0.2.14"
 comfy-table = "2.1.0"
-crossterm = "*"
+crossterm = "^0.19"
 etcetera = "0.3.2"
 glob = "0.3.0"
 itertools = "0.10.0"
