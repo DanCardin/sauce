@@ -1,4 +1,5 @@
 use assert_cmd::Command;
+use indoc::indoc;
 
 #[test]
 fn it_emits_shell_init_content() {
@@ -26,8 +27,23 @@ fn it_runs_sauce_in_show_mode() {
 #[test]
 fn it_runs_sauce_show_env() {
     let mut cmd = Command::cargo_bin("sauce").unwrap();
-    let assert = cmd.args(&["--shell", "bash", "show", "env"]).assert();
-    assert.success();
+    let assert = cmd
+        .args(&[
+            "--shell=bash",
+            "--file=tests/execute_it_runs.toml",
+            "show",
+            "env",
+        ])
+        .assert();
+    assert.success().stderr(indoc!(
+        "
+        ┌──────────┬─────────┐
+        │ Variable │ Value   │
+        ╞══════════╪═════════╡
+        │ TEST     │ example │
+        └──────────┴─────────┘
+        "
+    ));
 }
 
 #[test]
