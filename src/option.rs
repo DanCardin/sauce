@@ -2,19 +2,21 @@ use glob::Pattern;
 
 #[derive(Debug)]
 pub struct Options<'a> {
-    pub as_: Option<&'a str>,
     pub globs: Option<Vec<(Option<&'a str>, &'a str)>>,
     pub filters: Option<Vec<(Option<&'a str>, &'a str)>>,
+    pub as_: Option<&'a str>,
     pub path: Option<&'a str>,
+    pub file: Option<&'a str>,
 }
 
 impl<'a> Default for Options<'a> {
     fn default() -> Self {
         Self {
-            as_: None,
             globs: None,
             filters: None,
+            as_: None,
             path: None,
+            file: None,
         }
     }
 }
@@ -25,6 +27,7 @@ impl<'a> Options<'a> {
         filter: Option<&'a str>,
         as_: Option<&'a str>,
         path: Option<&'a str>,
+        file: Option<&'a str>,
     ) -> Self {
         let globs = parse_match_option(glob);
         let filters = parse_match_option(filter);
@@ -34,6 +37,7 @@ impl<'a> Options<'a> {
             path,
             globs,
             filters,
+            file,
         }
     }
 

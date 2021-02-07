@@ -1,7 +1,7 @@
 use anyhow::Result;
 use etcetera::home_dir;
-use std::env;
 use std::path::PathBuf;
+use std::{env, path::Path};
 
 use crate::{
     colors::{BLUE, RED, YELLOW},
@@ -19,7 +19,6 @@ pub struct Context<'a> {
     pub options: Options<'a>,
     pub output: Output,
 
-    pub home: PathBuf,
     pub data_dir: PathBuf,
 
     pub path: PathBuf,
@@ -27,52 +26,46 @@ pub struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
-    pub fn from_path<P: Into<PathBuf>>(
-        data_dir: PathBuf,
-        path: P,
-        settings: Settings,
-        options: Options<'a>,
-        output: Output,
-    ) -> Result<Self> {
-        let path = path.into().canonicalize()?;
-
-        let home = home_dir()?;
-
-        let relative_path = path.strip_prefix(&home)?;
-        let sauce_path = data_dir.join(relative_path).with_extension("toml");
-
-        Ok(Self {
-            settings,
-            options,
-            home,
-            data_dir,
-            path,
-            sauce_path,
-            output,
-        })
-    }
-
-    pub fn from_current_dir(
-        data_dir: PathBuf,
-        settings: Settings,
-        options: Options<'a>,
-        output: Output,
-    ) -> Result<Self> {
-        let current_dir = env::current_dir()?;
-        Self::from_path(data_dir, current_dir, settings, options, output)
-    }
-
     pub fn new(
         data_dir: PathBuf,
         settings: Settings,
         options: Options<'a>,
         output: Output,
     ) -> Result<Self> {
-        if let Some(path) = options.path {
-            Self::from_path(data_dir, path, settings, options, output)
-        } else {
-            Self::from_current_dir(data_dir, settings, options, output)
-        }
+        let (path, sauce_path, data_dir) = match options.file {
+            // The default case, where no `file` is supplied. We perform normal
+            // path lookup and saucefile cascading behavior.
+            None => {
+                let path = if let Some(path) = options.path {
+                    Path::new(path).to_path_buf()
+                } else {
+                    env::current_dir()?
+                };
+
+                let path = path.canonicalize()?;
+
+                let home = home_dir()?;
+
+                let relative_path = path.strip_prefix(&home)?;
+                let sauce_path = data_dir.join(relative_path).with_extension("toml");
+                (path, sauce_path, data_dir)
+            }
+            // The default case, where no `file` is supplied. We perform normal
+            // path lookup and saucefile cascading behavior.
+            Some(file) => {
+                let file = Path::new(file).to_path_buf().canonicalize()?;
+
+                (file.clone(), file, "".into())
+            }
+        };
+        Ok(Self {
+            data_dir,
+            settings,
+            options,
+            output,
+            path,
+            sauce_path,
+        })
     }
 
     fn saucefile(&mut self) -> Saucefile {
@@ -225,7 +218,6 @@ impl<'a> Default for Context<'a> {
         Self {
             settings: Settings::default(),
             options: Options::default(),
-            home: PathBuf::new(),
             data_dir: PathBuf::new(),
             path: PathBuf::new(),
             sauce_path: PathBuf::new(),

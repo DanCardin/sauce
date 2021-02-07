@@ -84,7 +84,7 @@ pub fn should_be_colored(strategy: ColorStrategy) -> bool {
         ColorStrategy::Always => true,
         ColorStrategy::Never => false,
         ColorStrategy::Auto => {
-            if atty::isnt(atty::Stream::Stdout) {
+            if atty::is(atty::Stream::Stderr) {
                 // NO_COLOR being None implies it should be colored, i.e. true
                 std::env::var_os("NO_COLOR").is_none()
             } else {

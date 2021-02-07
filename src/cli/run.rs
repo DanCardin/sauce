@@ -40,6 +40,7 @@ pub fn run() -> Result<()> {
         opts.filter.as_deref(),
         opts.r#as.as_deref(),
         opts.path.as_deref(),
+        opts.file.as_deref(),
     );
 
     let mut context = Context::new(data_dir, settings, options, output)?;
