@@ -36,6 +36,11 @@ pub struct CliOptions {
     #[clap(short, long)]
     pub path: Option<String>,
 
+    /// Sets a specific saucefile to load, overriding the default lookup mechanisms and
+    /// cascading behavior
+    #[clap(long)]
+    pub file: Option<String>,
+
     /// Runs the given command "as" the given "as" namespace.
     #[clap(short, long)]
     pub r#as: Option<String>,
