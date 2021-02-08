@@ -54,3 +54,19 @@ fn it_runs_shell_exec() {
         .assert();
     assert.success().stderr(predicates::str::contains("foo"));
 }
+
+#[test]
+fn it_loads_settings() {
+    let mut cmd = Command::cargo_bin("sauce").unwrap();
+    let assert = cmd
+        .args(&[
+            "--shell",
+            "bash",
+            "--file=tests/settings.toml",
+            "show",
+            "env",
+        ])
+        .assert();
+
+    assert.success().stderr(predicates::str::contains("foo"));
+}

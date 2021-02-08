@@ -84,6 +84,9 @@ Depending on the level of similarity to the above shells, you may be
 able to get away with using one of the above `shell init` hooks until
 explicit support is added
 
+See the [Configuration Reference](./doc/config.md) for available
+configuration options.
+
 ## Targets
 
 A thing which `sauce` can load/unload is called a “target”.
@@ -289,11 +292,8 @@ project) which would enable things like `sauce --as prod` or
 
 ## Planned Work
 
-- ability to specify values which should not react to `clear`
-
-  This might be useful for environment variables like `PATH` or
-  `PROMPT`, which would otherwise be very unsafe to include, unless you
-  **never** run `clear`.
+- only **print** `sauce config` command results when `--show` flag has
+  been used
 
 - ability to subdivide targets by shell
 

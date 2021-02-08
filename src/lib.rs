@@ -1,5 +1,6 @@
 pub mod cli;
 mod colors;
+pub mod filter;
 pub mod option;
 pub mod output;
 pub mod saucefile;

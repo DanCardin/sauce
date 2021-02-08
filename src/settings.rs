@@ -13,16 +13,18 @@ use crate::{output::Output, toml::get_document};
 use toml_edit::{Document, Item, Table, Value};
 
 #[derive(Debug)]
-pub struct RealizedSettings {
+pub struct RealizedSettings<'a> {
     pub autoload_hook: bool,
     pub autoload: bool,
+    pub clear_ignore: &'a [String],
 }
 
-impl Default for RealizedSettings {
+impl<'a> Default for RealizedSettings<'a> {
     fn default() -> Self {
         Self {
             autoload_hook: false,
             autoload: false,
+            clear_ignore: &[],
         }
     }
 }
@@ -32,6 +34,7 @@ pub struct Settings {
     pub file: PathBuf,
     pub autoload_hook: Option<bool>,
     pub autoload: Option<bool>,
+    pub clear_ignore: Option<Vec<String>>,
 }
 
 impl Settings {
@@ -46,15 +49,17 @@ impl Settings {
 
         let autoload_hook = Setting::new(general, "autoload-hook").as_bool();
         let autoload = Setting::new(general, "autoload").as_bool();
+        let clear_ignore = Setting::new(general, "clear-ignore").as_vec_of_string();
 
         Self {
             file,
             autoload_hook,
             autoload,
+            clear_ignore,
         }
     }
 
-    pub fn resolve_precedence(&self, fallback: &Self) -> RealizedSettings {
+    pub fn resolve_precedence<'a>(&'a self, fallback: &'a Self) -> RealizedSettings {
         let mut default = RealizedSettings::default();
 
         let settings_precedence = vec![fallback, self];
@@ -65,6 +70,9 @@ impl Settings {
             }
             if let Some(v) = settings.autoload {
                 default.autoload = v;
+            }
+            if let Some(v) = &settings.clear_ignore {
+                default.clear_ignore = v.as_slice();
             }
         }
         default
@@ -141,6 +149,19 @@ impl<'a> Setting<'a> {
         }
     }
 
+    pub fn as_vec_of_string(&self) -> Option<Vec<String>> {
+        if let Some(value) = self.get_value() {
+            self.notify_invalid("list of string", value.as_array())
+                .map(|t| {
+                    t.iter()
+                        .map(|v| v.as_str().unwrap_or("").to_string())
+                        .collect()
+                })
+        } else {
+            None
+        }
+    }
+
     fn notify_invalid<T: Display>(&self, kind: &str, value: Option<T>) -> Option<T> {
         if value.is_none() {
             eprintln!(
@@ -184,6 +205,7 @@ impl Default for Settings {
             file: PathBuf::new(),
             autoload_hook: None,
             autoload: None,
+            clear_ignore: None,
         }
     }
 }
