@@ -1,14 +1,11 @@
-use crate::settings::Settings;
-use crate::toml::write_document;
 use crate::{filter::FilterOptions, Context};
+use crate::{settings::Settings, toml::unwrap_toml_value};
 use indexmap::IndexMap;
 use itertools::iproduct;
-use toml_edit::Table;
 
 use crate::toml::get_document;
 use std::path::PathBuf;
-use std::str::FromStr;
-use toml_edit::{value, Document, Item, Value};
+use toml_edit::{Document, Item, Value};
 
 #[derive(Debug)]
 pub struct Saucefile {
@@ -44,39 +41,6 @@ impl Saucefile {
 
     pub fn settings(&self) -> Settings {
         Settings::from_document(self.path.clone(), &self.document)
-    }
-
-    pub fn set_var(&mut self, name: &str, raw_value: &str) {
-        let toml_value = Value::from_str(&raw_value).unwrap_or_else(|_| Value::from(raw_value));
-        let env_section = self.document.as_table_mut().entry("environment");
-        if env_section.is_none() {
-            *env_section = Item::Table(Table::new());
-        }
-        self.document["environment"][&name] = value(toml_value);
-    }
-
-    pub fn set_alias(&mut self, name: &str, raw_value: &str) {
-        let toml_value = Value::from_str(&raw_value).unwrap_or_else(|_| Value::from(raw_value));
-
-        let alias_section = self.document.as_table_mut().entry("alias");
-        if alias_section.is_none() {
-            *alias_section = Item::Table(Table::new());
-        }
-        self.document["alias"][&name] = value(toml_value);
-    }
-
-    pub fn set_function(&mut self, name: &str, body: &str) {
-        let toml_value = Value::from_str(&body).unwrap_or_else(|_| Value::from(body));
-
-        let alias_section = self.document.as_table_mut().entry("function");
-        if alias_section.is_none() {
-            *alias_section = Item::Table(Table::new());
-        }
-        self.document["function"][&name] = value(toml_value);
-    }
-
-    pub fn write(&mut self, context: &mut Context) {
-        write_document(&context.sauce_path, &self.document, &mut context.output);
     }
 
     fn section(
@@ -139,18 +103,6 @@ impl Default for Saucefile {
             document: Document::new(),
             ancestors: Vec::new(),
         }
-    }
-}
-
-fn unwrap_toml_value(value: &Value) -> String {
-    match value {
-        Value::InlineTable(_) => value.as_inline_table().unwrap().to_string(),
-        Value::Array(_) => value.as_array().unwrap().to_string(),
-        Value::String(_) => value.as_str().unwrap().to_string(),
-        Value::Integer(_) => value.as_integer().unwrap().to_string(),
-        Value::Boolean(_) => value.as_bool().unwrap().to_string(),
-        Value::Float(_) => value.as_float().unwrap().to_string(),
-        Value::DateTime(_) => value.as_date_time().unwrap().to_string(),
     }
 }
 
@@ -312,15 +264,15 @@ mod tests {
             assert_eq!(result, &[]);
         }
 
-        #[test]
-        fn it_roundtrips_value() {
-            let mut sauce = Saucefile::default();
+        // #[test]
+        // fn it_roundtrips_value() {
+        //     let mut sauce = Saucefile::default();
 
-            sauce.set_var("meow", "5");
-            let result = sauce.vars(&FilterOptions::default());
+        //     sauce.set_var("meow", "5");
+        //     let result = sauce.vars(&FilterOptions::default());
 
-            assert_eq!(result, vec![("meow", "5".to_string())]);
-        }
+        //     assert_eq!(result, vec![("meow", "5".to_string())]);
+        // }
     }
 
     mod aliases {
@@ -334,15 +286,15 @@ mod tests {
             assert_eq!(result, &[]);
         }
 
-        #[test]
-        fn it_roundtrips_value() {
-            let mut sauce = Saucefile::default();
+        // #[test]
+        // fn it_roundtrips_value() {
+        //     let mut sauce = Saucefile::default();
 
-            sauce.set_alias("meow", "5");
-            let result = sauce.aliases(&FilterOptions::default());
+        //     sauce.set_alias("meow", "5");
+        //     let result = sauce.aliases(&FilterOptions::default());
 
-            assert_eq!(result, vec![("meow", "5".to_string())]);
-        }
+        //     assert_eq!(result, vec![("meow", "5".to_string())]);
+        // }
     }
 
     mod functions {
@@ -356,14 +308,14 @@ mod tests {
             assert_eq!(result, &[]);
         }
 
-        #[test]
-        fn it_roundtrips_value() {
-            let mut sauce = Saucefile::default();
+        // #[test]
+        // fn it_roundtrips_value() {
+        //     let mut sauce = Saucefile::default();
 
-            sauce.set_function("meow", "5");
-            let result = sauce.functions(&FilterOptions::default());
+        //     sauce.set_function("meow", "5");
+        //     let result = sauce.functions(&FilterOptions::default());
 
-            assert_eq!(result, vec![("meow", "5".to_string())]);
-        }
+        //     assert_eq!(result, vec![("meow", "5".to_string())]);
+        // }
     }
 }

@@ -15,7 +15,9 @@ pub struct CliOptions {
     #[clap(long)]
     pub autoload: bool,
 
-    /// Only **show** the intended output of the command rather than executing it.
+    /// For typical commands such as `sauce` and `sauce clear` this outputs the exact
+    /// shell output that would have executed. For mutating commands like `sauce config`
+    /// and `sauce set`, the change is printed but not saved.
     #[clap(long)]
     pub show: bool,
 
@@ -122,7 +124,8 @@ pub enum SetKinds {
 /// Key-value pairs, delimited by an "=".
 #[derive(Clap, Debug)]
 pub struct SetVarKind {
-    pub values: Vec<String>,
+    #[clap(parse(try_from_str = crate::cli::utilities::parse_key_val))]
+    pub values: Vec<(String, String)>,
 }
 
 /// Key value pair, supplied as individual arguments

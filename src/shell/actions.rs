@@ -153,6 +153,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::toml::{ensure_section, value_from_string};
+
     use crate::test_utils::{setup, TestShell};
     use indoc::indoc;
     use std::path::Path;
@@ -216,13 +218,19 @@ mod tests {
             let shell = TestShell {};
             let (out, err, mut context) = setup();
             let mut saucefile = Saucefile::default();
-            saucefile.set_var("var", "varvalue");
-            saucefile.set_var("alias", "aliasvalue");
-            saucefile.set_var("function", "functionvalue");
+
+            let section = ensure_section(&mut saucefile.document, "environment");
+            section["var"] = value_from_string("varvalue");
+
+            let section = ensure_section(&mut saucefile.document, "alias");
+            section["alias"] = value_from_string("aliasvalue");
+
+            let section = ensure_section(&mut saucefile.document, "function");
+            section["fn"] = value_from_string("fnvalue");
 
             clear(&mut context, &shell, saucefile);
 
-            assert_eq!(out.value(), "unset var;\nunset alias;\nunset function;\n\n");
+            assert_eq!(out.value(), "unset var;\n\nunalias alias;\n\nunset fn;\n\n");
             assert_eq!(err.value(), "Cleared your sauce\n");
         }
     }
@@ -236,7 +244,9 @@ mod tests {
         fn it_shows_env_vars() {
             let (out, err, mut context) = setup();
             let mut saucefile = Saucefile::default();
-            saucefile.set_var("var", "varvalue");
+
+            let section = ensure_section(&mut saucefile.document, "environment");
+            section["var"] = value_from_string("varvalue");
 
             show(&mut context, Target::EnvVar, saucefile);
 
@@ -259,7 +269,9 @@ mod tests {
         fn it_shows_aliases() {
             let (out, err, mut context) = setup();
             let mut saucefile = Saucefile::default();
-            saucefile.set_alias("alias", "aliasvalue");
+
+            let section = ensure_section(&mut saucefile.document, "alias");
+            section["alias"] = value_from_string("aliasvalue");
 
             show(&mut context, Target::Alias, saucefile);
 
@@ -282,7 +294,9 @@ mod tests {
         fn it_shows_functions() {
             let (out, err, mut context) = setup();
             let mut saucefile = Saucefile::default();
-            saucefile.set_function("function", "git add\ngit commit");
+
+            let section = ensure_section(&mut saucefile.document, "function");
+            section["function"] = value_from_string("git add\ngit commit");
 
             show(&mut context, Target::Function, saucefile);
 
@@ -313,15 +327,21 @@ mod tests {
             let shell = TestShell {};
             let (out, err, mut context) = setup();
             let mut saucefile = Saucefile::default();
-            saucefile.set_var("var", "varvalue");
-            saucefile.set_var("alias", "aliasvalue");
-            saucefile.set_var("function", "functionvalue");
+
+            let section = ensure_section(&mut saucefile.document, "environment");
+            section["var"] = value_from_string("varvalue");
+
+            let section = ensure_section(&mut saucefile.document, "alias");
+            section["alias"] = value_from_string("aliasvalue");
+
+            let section = ensure_section(&mut saucefile.document, "function");
+            section["fn"] = value_from_string("fnvalue");
 
             execute(&mut context, &shell, saucefile, false);
 
             assert_eq!(
                 out.value(),
-                "export var=varvalue;\nexport alias=aliasvalue;\nexport function=functionvalue;\n\n"
+                "export var=varvalue;\n\nalias alias=aliasvalue;\n\nfunction fn=fnvalue;\n\n"
             );
             assert_eq!(err.value(), "Sourced \n");
         }

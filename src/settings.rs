@@ -1,7 +1,6 @@
 use crate::{
     colors::{RED, YELLOW},
     output::ErrorCode,
-    toml::write_document,
 };
 use anyhow::Result;
 use std::{
@@ -84,14 +83,13 @@ impl Settings {
         if settings_section.is_none() {
             *settings_section = Item::Table(Table::new());
         }
-        let settings = &mut document["settings"];
 
-        let mut values = pairs
+        let values = pairs
             .iter()
             .filter_map(|(setting, value)| match setting.as_ref() {
                 "autoload" | "autoload-hook" => {
                     if let Ok(parsed_value) = value.as_ref().parse::<Value>() {
-                        Some((setting, toml_edit::value(parsed_value)))
+                        Some((setting.as_ref(), toml_edit::value(parsed_value)))
                     } else {
                         output.notify_error(
                             ErrorCode::ParseError,
@@ -114,17 +112,13 @@ impl Settings {
                     None
                 }
             })
-            .peekable();
+            .collect::<Vec<_>>();
 
-        if values.peek().is_none() {
+        if values.is_empty() {
             return;
         }
 
-        for (setting, value) in values {
-            settings[setting.as_ref()] = value;
-        }
-
-        write_document(&self.file, &document, output);
+        output.write_toml(&self.file, &mut document, "settings", values);
     }
 }
 

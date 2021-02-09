@@ -11,6 +11,7 @@ use crate::{
     settings::Settings,
     shell::{actions, Shell},
     target::Target,
+    toml::value_from_string,
 };
 
 #[derive(Debug)]
@@ -154,51 +155,44 @@ impl<'a> Context<'a> {
             .rev()
     }
 
-    pub fn set_var<T: AsRef<str>>(&mut self, values: &[T]) {
+    pub fn set_var<T: AsRef<str>>(&mut self, raw_values: &[(T, T)]) {
         let mut saucefile = self.saucefile();
-        for values in values.iter() {
-            let mut parts = values.as_ref().splitn(2, '=');
-            let var = parts.next().unwrap_or("");
-            let value = parts.next().unwrap_or("");
 
-            saucefile.set_var(var, value);
-            self.output.notify(&[
-                BLUE.paint("Set "),
-                YELLOW.paint(var),
-                BLUE.paint(" = "),
-                YELLOW.paint(value),
-            ]);
-        }
-        saucefile.write(self);
+        let values = raw_values
+            .iter()
+            .map(|(name, raw_value)| (name, value_from_string(raw_value.as_ref())))
+            .collect::<Vec<_>>();
+
+        self.output.write_toml(
+            &self.sauce_path,
+            &mut saucefile.document,
+            "environment",
+            values,
+        );
     }
 
-    pub fn set_alias<T: AsRef<str>>(&mut self, values: &[T]) {
+    pub fn set_alias<T: AsRef<str>>(&mut self, raw_values: &[(T, T)]) {
         let mut saucefile = self.saucefile();
-        for values in values.iter() {
-            let mut parts = values.as_ref().splitn(2, '=');
-            let var = parts.next().unwrap_or("");
-            let value = parts.next().unwrap_or("");
-            saucefile.set_alias(var, value);
-            self.output.notify(&[
-                BLUE.paint("Set "),
-                YELLOW.paint(var),
-                BLUE.paint(" = "),
-                YELLOW.paint(value),
-            ]);
-        }
-        saucefile.write(self);
+
+        let values = raw_values
+            .iter()
+            .map(|(name, raw_value)| (name, value_from_string(raw_value.as_ref())))
+            .collect::<Vec<_>>();
+
+        self.output
+            .write_toml(&self.sauce_path, &mut saucefile.document, "alias", values);
     }
 
     pub fn set_function(&mut self, name: &str, body: &str) {
         let mut saucefile = self.saucefile();
-        saucefile.set_function(name, body);
-        self.output.notify(&[
-            BLUE.paint("Set "),
-            YELLOW.paint(name),
-            BLUE.paint(" = "),
-            YELLOW.paint(body),
-        ]);
-        saucefile.write(self);
+        let values = vec![(name, value_from_string(body))];
+
+        self.output.write_toml(
+            &self.sauce_path,
+            &mut saucefile.document,
+            "function",
+            values,
+        );
     }
 
     pub fn set_config<T: AsRef<str>>(&mut self, values: &[(T, T)], global: bool) {
