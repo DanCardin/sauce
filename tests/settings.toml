@@ -1,0 +1,7 @@
+[settings]
+autoload-hook = true
+autoload = true
+clear-ignore = ["PATH"]
+
+[env]
+foo = "bar"

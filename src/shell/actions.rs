@@ -1,5 +1,6 @@
 use crate::{
     colors::{BLUE, RED, YELLOW},
+    filter::{parse_match_option, FilterOptions},
     saucefile::Saucefile,
     shell::{utilities::get_binary, Shell},
     target::Target,
@@ -45,15 +46,33 @@ pub fn execute_shell_command(context: &mut Context, shell: &dyn Shell, command: 
 pub fn clear(context: &mut Context, shell: &dyn Shell, mut saucefile: Saucefile) {
     let options = &context.options;
     let output = &mut context.output;
-    output.output(render_items(saucefile.vars(options), |k, _| {
-        shell.unset_var(k)
-    }));
-    output.output(render_items(saucefile.aliases(options), |k, _| {
-        shell.unset_alias(k)
-    }));
-    output.output(render_items(saucefile.functions(options), |k, _| {
-        shell.unset_function(k)
-    }));
+
+    let settings = saucefile.settings();
+    let filter_exclusions = settings
+        .resolve_precedence(&context.settings)
+        .clear_ignore
+        .iter()
+        .flat_map(|i| parse_match_option(Some(i)))
+        .collect::<Vec<_>>();
+
+    let filter_options = FilterOptions {
+        globs: &options.globs,
+        filters: &options.filters,
+        filter_exclusions: filter_exclusions.as_slice(),
+    };
+
+    output.output(render_items(
+        saucefile.vars(options.as_, &filter_options),
+        |k, _| shell.unset_var(k),
+    ));
+    output.output(render_items(
+        saucefile.aliases(options.as_, &filter_options),
+        |k, _| shell.unset_alias(k),
+    ));
+    output.output(render_items(
+        saucefile.functions(options.as_, &filter_options),
+        |k, _| shell.unset_function(k),
+    ));
     output.notify(&[BLUE.bold().paint("Cleared your sauce")]);
 }
 
@@ -65,10 +84,17 @@ pub fn show(context: &mut Context, target: Target, mut saucefile: Saucefile) {
     };
 
     let options = &context.options;
+
+    let filter_options = FilterOptions {
+        globs: &options.globs,
+        filters: &options.filters,
+        filter_exclusions: &[],
+    };
+
     let pairs = match target {
-        Target::EnvVar => saucefile.vars(options),
-        Target::Alias => saucefile.aliases(options),
-        Target::Function => saucefile.functions(options),
+        Target::EnvVar => saucefile.vars(options.as_, &filter_options),
+        Target::Alias => saucefile.aliases(options.as_, &filter_options),
+        Target::Function => saucefile.functions(options.as_, &filter_options),
     };
     let preset = match target {
         Target::EnvVar => None,
@@ -105,15 +131,24 @@ pub fn execute(
     let options = &context.options;
     let output = &mut context.output;
 
-    output.output(render_items(saucefile.vars(options), |k, v| {
-        shell.set_var(k, v)
-    }));
-    output.output(render_items(saucefile.aliases(options), |k, v| {
-        shell.set_alias(k, v)
-    }));
-    output.output(render_items(saucefile.functions(options), |k, v| {
-        shell.set_function(k, v)
-    }));
+    let filter_options = FilterOptions {
+        globs: &options.globs,
+        filters: &options.filters,
+        filter_exclusions: &[],
+    };
+
+    output.output(render_items(
+        saucefile.vars(options.as_, &filter_options),
+        |k, v| shell.set_var(k, v),
+    ));
+    output.output(render_items(
+        saucefile.aliases(options.as_, &filter_options),
+        |k, v| shell.set_alias(k, v),
+    ));
+    output.output(render_items(
+        saucefile.functions(options.as_, &filter_options),
+        |k, v| shell.set_function(k, v),
+    ));
 
     output.notify(&[
         BLUE.bold().paint("Sourced "),
