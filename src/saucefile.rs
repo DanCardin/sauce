@@ -1,17 +1,11 @@
-use crate::toml::write_document;
 use crate::{filter::FilterOptions, Context};
-use crate::{
-    filter::{filter_exclude, filter_match, glob_match},
-    settings::Settings,
-};
+use crate::{settings::Settings, toml::unwrap_toml_value};
 use indexmap::IndexMap;
 use itertools::iproduct;
-use toml_edit::Table;
 
 use crate::toml::get_document;
 use std::path::PathBuf;
-use std::str::FromStr;
-use toml_edit::{value, Document, Item, Value};
+use toml_edit::{Document, Item, Value};
 
 #[derive(Debug)]
 pub struct Saucefile {
@@ -49,46 +43,12 @@ impl Saucefile {
         Settings::from_document(self.path.clone(), &self.document)
     }
 
-    pub fn set_var(&mut self, name: &str, raw_value: &str) {
-        let toml_value = Value::from_str(&raw_value).unwrap_or_else(|_| Value::from(raw_value));
-        let env_section = self.document.as_table_mut().entry("environment");
-        if env_section.is_none() {
-            *env_section = Item::Table(Table::new());
-        }
-        self.document["environment"][&name] = value(toml_value);
-    }
-
-    pub fn set_alias(&mut self, name: &str, raw_value: &str) {
-        let toml_value = Value::from_str(&raw_value).unwrap_or_else(|_| Value::from(raw_value));
-
-        let alias_section = self.document.as_table_mut().entry("alias");
-        if alias_section.is_none() {
-            *alias_section = Item::Table(Table::new());
-        }
-        self.document["alias"][&name] = value(toml_value);
-    }
-
-    pub fn set_function(&mut self, name: &str, body: &str) {
-        let toml_value = Value::from_str(&body).unwrap_or_else(|_| Value::from(body));
-
-        let alias_section = self.document.as_table_mut().entry("function");
-        if alias_section.is_none() {
-            *alias_section = Item::Table(Table::new());
-        }
-        self.document["function"][&name] = value(toml_value);
-    }
-
-    pub fn write(&mut self, context: &mut Context) {
-        write_document(&context.sauce_path, &self.document, &mut context.output);
-    }
-
     fn section(
         &mut self,
         sections: &[&str],
-        tag: Option<&str>,
         filter_options: &FilterOptions,
     ) -> Vec<(&str, String)> {
-        let tag = tag.unwrap_or("default");
+        let tag = filter_options.as_.unwrap_or("default");
 
         let documents = self.ancestors.iter().chain(vec![&self.document]);
 
@@ -97,9 +57,9 @@ impl Saucefile {
             .filter_map(|x| x)
             .flat_map(|vars| vars.iter())
             .filter(|(key, _)| {
-                glob_match(filter_options.globs, sections, key)
-                    && filter_match(filter_options.filters, sections, key)
-                    && filter_exclude(filter_options.filter_exclusions, sections, key)
+                filter_options.glob_match(sections, key)
+                    && filter_options.filter_match(sections, key)
+                    && filter_options.filter_exclude(sections, key)
             })
             .map(|(key, item)| {
                 let var = match item {
@@ -123,28 +83,16 @@ impl Saucefile {
             .collect()
     }
 
-    pub fn vars(
-        &mut self,
-        tag: Option<&str>,
-        filter_options: &FilterOptions,
-    ) -> Vec<(&str, String)> {
-        self.section(&["env", "environment"], tag, filter_options)
+    pub fn vars(&mut self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
+        self.section(&["env", "environment"], filter_options)
     }
 
-    pub fn aliases(
-        &mut self,
-        tag: Option<&str>,
-        filter_options: &FilterOptions,
-    ) -> Vec<(&str, String)> {
-        self.section(&["alias"], tag, filter_options)
+    pub fn aliases(&mut self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
+        self.section(&["alias"], filter_options)
     }
 
-    pub fn functions(
-        &mut self,
-        tag: Option<&str>,
-        filter_options: &FilterOptions,
-    ) -> Vec<(&str, String)> {
-        self.section(&["function"], tag, filter_options)
+    pub fn functions(&mut self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
+        self.section(&["function"], filter_options)
     }
 }
 
@@ -155,18 +103,6 @@ impl Default for Saucefile {
             document: Document::new(),
             ancestors: Vec::new(),
         }
-    }
-}
-
-fn unwrap_toml_value(value: &Value) -> String {
-    match value {
-        Value::InlineTable(_) => value.as_inline_table().unwrap().to_string(),
-        Value::Array(_) => value.as_array().unwrap().to_string(),
-        Value::String(_) => value.as_str().unwrap().to_string(),
-        Value::Integer(_) => value.as_integer().unwrap().to_string(),
-        Value::Boolean(_) => value.as_bool().unwrap().to_string(),
-        Value::Float(_) => value.as_float().unwrap().to_string(),
-        Value::DateTime(_) => value.as_date_time().unwrap().to_string(),
     }
 }
 
@@ -186,7 +122,7 @@ mod tests {
             "#;
             sauce.document = toml.parse::<Document>().expect("invalid doc");
 
-            let result = sauce.section(&["foo"], None, &FilterOptions::default());
+            let result = sauce.section(&["foo"], &FilterOptions::default());
             assert_eq!(result, vec![("bar", "baz".to_string())]);
         }
 
@@ -200,7 +136,7 @@ mod tests {
             "#;
             sauce.document = toml.parse::<Document>().expect("invalid doc");
 
-            let result = sauce.section(&["non-matching", "foo"], None, &FilterOptions::default());
+            let result = sauce.section(&["non-matching", "foo"], &FilterOptions::default());
             assert_eq!(result, vec![("bar", "baz".to_string())]);
         }
 
@@ -214,7 +150,7 @@ mod tests {
             "#;
             sauce.document = toml.parse::<Document>().expect("invalid doc");
 
-            let result = sauce.section(&["non-matching"], None, &FilterOptions::default());
+            let result = sauce.section(&["non-matching"], &FilterOptions::default());
             assert_eq!(result, &[]);
         }
 
@@ -230,7 +166,7 @@ mod tests {
             "#;
             sauce.document = toml.parse::<Document>().expect("invalid doc");
 
-            let result = sauce.section(&["foo"], None, &FilterOptions::default());
+            let result = sauce.section(&["foo"], &FilterOptions::default());
             assert_eq!(
                 result,
                 vec![
@@ -253,7 +189,13 @@ mod tests {
             "#;
             sauce.document = toml.parse::<Document>().expect("invalid doc");
 
-            let result = sauce.section(&["foo"], Some("wow"), &FilterOptions::default());
+            let result = sauce.section(
+                &["foo"],
+                &FilterOptions {
+                    as_: Some("wow"),
+                    ..Default::default()
+                },
+            );
             assert_eq!(
                 result,
                 vec![
@@ -278,7 +220,6 @@ mod tests {
 
             let result = sauce.section(
                 &["foo"],
-                None,
                 &FilterOptions {
                     filter_exclusions: &[(None, "bar")],
                     ..Default::default()
@@ -300,7 +241,6 @@ mod tests {
 
             let result = sauce.section(
                 &["foo"],
-                None,
                 &FilterOptions {
                     filter_exclusions: &[(Some("bar"), "bar")],
                     ..Default::default()
@@ -320,19 +260,19 @@ mod tests {
         #[test]
         fn it_yields_empty_when_empty() {
             let mut sauce = Saucefile::default();
-            let result = sauce.vars(None, &FilterOptions::default());
+            let result = sauce.vars(&FilterOptions::default());
             assert_eq!(result, &[]);
         }
 
-        #[test]
-        fn it_roundtrips_value() {
-            let mut sauce = Saucefile::default();
+        // #[test]
+        // fn it_roundtrips_value() {
+        //     let mut sauce = Saucefile::default();
 
-            sauce.set_var("meow", "5");
-            let result = sauce.vars(None, &FilterOptions::default());
+        //     sauce.set_var("meow", "5");
+        //     let result = sauce.vars(&FilterOptions::default());
 
-            assert_eq!(result, vec![("meow", "5".to_string())]);
-        }
+        //     assert_eq!(result, vec![("meow", "5".to_string())]);
+        // }
     }
 
     mod aliases {
@@ -342,19 +282,19 @@ mod tests {
         #[test]
         fn it_yields_empty_when_empty() {
             let mut sauce = Saucefile::default();
-            let result = sauce.aliases(None, &FilterOptions::default());
+            let result = sauce.aliases(&FilterOptions::default());
             assert_eq!(result, &[]);
         }
 
-        #[test]
-        fn it_roundtrips_value() {
-            let mut sauce = Saucefile::default();
+        // #[test]
+        // fn it_roundtrips_value() {
+        //     let mut sauce = Saucefile::default();
 
-            sauce.set_alias("meow", "5");
-            let result = sauce.aliases(None, &FilterOptions::default());
+        //     sauce.set_alias("meow", "5");
+        //     let result = sauce.aliases(&FilterOptions::default());
 
-            assert_eq!(result, vec![("meow", "5".to_string())]);
-        }
+        //     assert_eq!(result, vec![("meow", "5".to_string())]);
+        // }
     }
 
     mod functions {
@@ -364,18 +304,18 @@ mod tests {
         #[test]
         fn it_yields_empty_when_empty() {
             let mut sauce = Saucefile::default();
-            let result = sauce.functions(None, &FilterOptions::default());
+            let result = sauce.functions(&FilterOptions::default());
             assert_eq!(result, &[]);
         }
 
-        #[test]
-        fn it_roundtrips_value() {
-            let mut sauce = Saucefile::default();
+        // #[test]
+        // fn it_roundtrips_value() {
+        //     let mut sauce = Saucefile::default();
 
-            sauce.set_function("meow", "5");
-            let result = sauce.functions(None, &FilterOptions::default());
+        //     sauce.set_function("meow", "5");
+        //     let result = sauce.functions(&FilterOptions::default());
 
-            assert_eq!(result, vec![("meow", "5".to_string())]);
-        }
+        //     assert_eq!(result, vec![("meow", "5".to_string())]);
+        // }
     }
 }

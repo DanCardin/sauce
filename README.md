@@ -292,9 +292,6 @@ project) which would enable things like `sauce --as prod` or
 
 ## Planned Work
 
-- only **print** `sauce config` command results when `--show` flag has
-  been used
-
 - ability to subdivide targets by shell
 
   i.e. allow one to specify `[alias.fish]`.

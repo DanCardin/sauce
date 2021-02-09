@@ -16,7 +16,7 @@ where
 }
 
 /// Accept data from stdin
-pub fn get_input(values: &[String]) -> Vec<String> {
+pub fn get_input(values: &[(String, String)]) -> Vec<(String, String)> {
     let mut result = Vec::new();
     result.extend_from_slice(values);
 
@@ -31,7 +31,10 @@ pub fn get_input(values: &[String]) -> Vec<String> {
             if let Some(b) = buffer.strip_suffix("\n") {
                 buffer = b.to_string();
             }
-            result.push(buffer);
+
+            if let Ok(keyval) = parse_key_val(&buffer) {
+                result.push(keyval);
+            }
         }
     }
 

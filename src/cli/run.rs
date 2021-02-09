@@ -1,9 +1,9 @@
-use crate::option::Options;
-use crate::output::Output;
+use crate::filter::FilterOptions;
 use crate::settings::Settings;
 use crate::shell::{self, Shell};
 use crate::Context;
 use crate::{cli::utilities::get_input, target::Target};
+use crate::{filter::parse_match_option, output::Output};
 use anyhow::Result;
 use etcetera::app_strategy::{AppStrategy, AppStrategyArgs, Xdg};
 
@@ -35,15 +35,21 @@ pub fn run() -> Result<()> {
         .only_show(opts.show);
 
     let settings = Settings::load(&config_dir, &mut output)?;
-    let options = Options::new(
-        opts.glob.as_deref(),
-        opts.filter.as_deref(),
-        opts.r#as.as_deref(),
+    let filter_options = FilterOptions {
+        globs: &parse_match_option(opts.glob.as_deref()),
+        filters: &parse_match_option(opts.filter.as_deref()),
+        as_: opts.r#as.as_deref(),
+        filter_exclusions: &[],
+    };
+
+    let mut context = Context::new(
+        data_dir,
+        settings,
+        filter_options,
+        output,
         opts.path.as_deref(),
         opts.file.as_deref(),
-    );
-
-    let mut context = Context::new(data_dir, settings, options, output)?;
+    )?;
 
     let shell_kind = &*shell::detect(opts.shell);
 

@@ -1,11 +1,17 @@
-use crate::colors::{TABLE_BLUE, TABLE_YELLOW};
+use crate::toml::{ensure_section, write_document};
+use crate::{
+    colors::{BLUE, TABLE_BLUE, TABLE_YELLOW, YELLOW},
+    toml::unwrap_toml_value,
+};
 use anyhow::Result;
 use comfy_table::{Attribute, Cell, ContentArrangement, Row, Table};
 use std::{
     fmt::Display,
     io::{stderr, stdout, Write},
     ops::Deref,
+    path::Path,
 };
+use toml_edit::{Document, Item};
 
 use ansi_term::{ANSIString, ANSIStrings};
 
@@ -174,6 +180,35 @@ impl Output {
         self.out.flush()?;
         self.err.flush()?;
         Ok(())
+    }
+
+    pub fn write_toml<I, T>(
+        &mut self,
+        file: &Path,
+        document: &mut Document,
+        heading: &str,
+        values: I,
+    ) where
+        I: IntoIterator<Item = (T, Item)>,
+        T: AsRef<str>,
+    {
+        for (name, value) in values.into_iter() {
+            self.notify(&[
+                "Setting ".into(),
+                BLUE.bold().paint(name.as_ref()),
+                " = ".into(),
+                YELLOW.paint(unwrap_toml_value(value.as_value().unwrap())),
+            ]);
+
+            if !self.show {
+                let section = ensure_section(document, heading);
+                section[name.as_ref()] = value;
+            }
+        }
+
+        if !self.show {
+            write_document(file, document, self);
+        }
     }
 }
 
