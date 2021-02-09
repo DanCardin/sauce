@@ -5,7 +5,7 @@ use std::{env, path::Path};
 
 use crate::{
     colors::{BLUE, RED, YELLOW},
-    option::Options,
+    filter::FilterOptions,
     output::{ErrorCode, Output},
     saucefile::Saucefile,
     settings::Settings,
@@ -16,7 +16,7 @@ use crate::{
 #[derive(Debug)]
 pub struct Context<'a> {
     pub settings: Settings,
-    pub options: Options<'a>,
+    pub filter_options: FilterOptions<'a>,
     pub output: Output,
 
     pub data_dir: PathBuf,
@@ -29,14 +29,16 @@ impl<'a> Context<'a> {
     pub fn new(
         data_dir: PathBuf,
         settings: Settings,
-        options: Options<'a>,
+        filter_options: FilterOptions<'a>,
         output: Output,
+        path: Option<&'a str>,
+        file: Option<&'a str>,
     ) -> Result<Self> {
-        let (path, sauce_path, data_dir) = match options.file {
+        let (path, sauce_path, data_dir) = match file {
             // The default case, where no `file` is supplied. We perform normal
             // path lookup and saucefile cascading behavior.
             None => {
-                let path = if let Some(path) = options.path {
+                let path = if let Some(path) = path {
                     Path::new(path).to_path_buf()
                 } else {
                     env::current_dir()?
@@ -61,7 +63,7 @@ impl<'a> Context<'a> {
         Ok(Self {
             data_dir,
             settings,
-            options,
+            filter_options,
             output,
             path,
             sauce_path,
@@ -217,7 +219,7 @@ impl<'a> Default for Context<'a> {
     fn default() -> Self {
         Self {
             settings: Settings::default(),
-            options: Options::default(),
+            filter_options: FilterOptions::default(),
             data_dir: PathBuf::new(),
             path: PathBuf::new(),
             sauce_path: PathBuf::new(),

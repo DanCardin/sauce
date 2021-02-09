@@ -44,7 +44,6 @@ pub fn execute_shell_command(context: &mut Context, shell: &dyn Shell, command: 
 }
 
 pub fn clear(context: &mut Context, shell: &dyn Shell, mut saucefile: Saucefile) {
-    let options = &context.options;
     let output = &mut context.output;
 
     let settings = saucefile.settings();
@@ -56,21 +55,18 @@ pub fn clear(context: &mut Context, shell: &dyn Shell, mut saucefile: Saucefile)
         .collect::<Vec<_>>();
 
     let filter_options = FilterOptions {
-        globs: &options.globs,
-        filters: &options.filters,
         filter_exclusions: filter_exclusions.as_slice(),
+        ..context.filter_options
     };
 
+    output.output(render_items(saucefile.vars(&filter_options), |k, _| {
+        shell.unset_var(k)
+    }));
+    output.output(render_items(saucefile.aliases(&filter_options), |k, _| {
+        shell.unset_alias(k)
+    }));
     output.output(render_items(
-        saucefile.vars(options.as_, &filter_options),
-        |k, _| shell.unset_var(k),
-    ));
-    output.output(render_items(
-        saucefile.aliases(options.as_, &filter_options),
-        |k, _| shell.unset_alias(k),
-    ));
-    output.output(render_items(
-        saucefile.functions(options.as_, &filter_options),
+        saucefile.functions(&filter_options),
         |k, _| shell.unset_function(k),
     ));
     output.notify(&[BLUE.bold().paint("Cleared your sauce")]);
@@ -83,18 +79,10 @@ pub fn show(context: &mut Context, target: Target, mut saucefile: Saucefile) {
         Target::Function => &["Function", "Body"],
     };
 
-    let options = &context.options;
-
-    let filter_options = FilterOptions {
-        globs: &options.globs,
-        filters: &options.filters,
-        filter_exclusions: &[],
-    };
-
     let pairs = match target {
-        Target::EnvVar => saucefile.vars(options.as_, &filter_options),
-        Target::Alias => saucefile.aliases(options.as_, &filter_options),
-        Target::Function => saucefile.functions(options.as_, &filter_options),
+        Target::EnvVar => saucefile.vars(&context.filter_options),
+        Target::Alias => saucefile.aliases(&context.filter_options),
+        Target::Function => saucefile.functions(&context.filter_options),
     };
     let preset = match target {
         Target::EnvVar => None,
@@ -128,25 +116,18 @@ pub fn execute(
     {
         return;
     }
-    let options = &context.options;
     let output = &mut context.output;
 
-    let filter_options = FilterOptions {
-        globs: &options.globs,
-        filters: &options.filters,
-        filter_exclusions: &[],
-    };
-
     output.output(render_items(
-        saucefile.vars(options.as_, &filter_options),
+        saucefile.vars(&context.filter_options),
         |k, v| shell.set_var(k, v),
     ));
     output.output(render_items(
-        saucefile.aliases(options.as_, &filter_options),
+        saucefile.aliases(&context.filter_options),
         |k, v| shell.set_alias(k, v),
     ));
     output.output(render_items(
-        saucefile.functions(options.as_, &filter_options),
+        saucefile.functions(&context.filter_options),
         |k, v| shell.set_function(k, v),
     ));
 

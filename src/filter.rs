@@ -2,7 +2,10 @@ use glob::Pattern;
 
 pub type MatchOption<'a> = (Option<&'a str>, &'a str);
 
+#[derive(Debug)]
 pub struct FilterOptions<'a> {
+    pub as_: Option<&'a str>,
+
     pub globs: &'a [MatchOption<'a>],
 
     pub filters: &'a [MatchOption<'a>],
@@ -12,6 +15,7 @@ pub struct FilterOptions<'a> {
 impl<'a> Default for FilterOptions<'a> {
     fn default() -> Self {
         Self {
+            as_: None,
             globs: &[],
             filters: &[],
             filter_exclusions: &[],
@@ -19,31 +23,33 @@ impl<'a> Default for FilterOptions<'a> {
     }
 }
 
-pub fn glob_match(globs: &[MatchOption], kinds: &[&str], value: &str) -> bool {
-    check_matches(
-        globs,
-        kinds,
-        value,
-        |g, v| {
-            if let Ok(pattern) = Pattern::new(g) {
-                if pattern.matches(v) {
-                    return true;
+impl<'a> FilterOptions<'a> {
+    pub fn glob_match(&self, kinds: &[&str], value: &str) -> bool {
+        check_matches(
+            self.globs,
+            kinds,
+            value,
+            |g, v| {
+                if let Ok(pattern) = Pattern::new(g) {
+                    if pattern.matches(v) {
+                        return true;
+                    }
+                } else {
+                    eprintln!("Invalid pattern {}", g);
                 }
-            } else {
-                eprintln!("Invalid pattern {}", g);
-            }
-            false
-        },
-        true,
-    )
-}
+                false
+            },
+            true,
+        )
+    }
 
-pub fn filter_match(filters: &[MatchOption], kinds: &[&str], value: &str) -> bool {
-    check_matches(filters, kinds, value, |f, v| f == v, true)
-}
+    pub fn filter_match(&self, kinds: &[&str], value: &str) -> bool {
+        check_matches(self.filters, kinds, value, |f, v| f == v, true)
+    }
 
-pub fn filter_exclude(filters: &[MatchOption], kinds: &[&str], value: &str) -> bool {
-    check_matches(filters, kinds, value, |f, v| f == v, false)
+    pub fn filter_exclude(&self, kinds: &[&str], value: &str) -> bool {
+        check_matches(self.filter_exclusions, kinds, value, |f, v| f == v, false)
+    }
 }
 
 fn check_matches<'a, F>(
@@ -127,31 +133,40 @@ mod tests {
 
         #[test]
         fn it_includes_all_values_when_empty() {
-            let result = filter_match(&[], &["env"], "foo");
+            let filter_options = FilterOptions::default();
+            let result = filter_options.filter_match(&["env"], "foo");
             assert_eq!(result, true)
         }
 
         #[test]
         fn it_includes_untagged_match() {
-            let result = filter_match(&[(None, "foo")], &["env"], "foo");
+            let mut filter_options = FilterOptions::default();
+            filter_options.filters = &[(None, "foo")];
+            let result = filter_options.filter_match(&["env"], "foo");
             assert_eq!(result, true)
         }
 
         #[test]
         fn it_includes_tagged_matches() {
-            let result = filter_match(&[(Some("env"), "foo")], &["env"], "foo");
+            let mut filter_options = FilterOptions::default();
+            filter_options.filters = &[(Some("env"), "foo")];
+            let result = filter_options.filter_match(&["env"], "foo");
             assert_eq!(result, true)
         }
 
         #[test]
         fn it_excludes_non_matching_tagged_non_match() {
-            let result = filter_match(&[(Some("not-env"), "foo")], &["env"], "foo");
+            let mut filter_options = FilterOptions::default();
+            filter_options.filters = &[(Some("not-env"), "foo")];
+            let result = filter_options.filter_match(&["env"], "foo");
             assert_eq!(result, false)
         }
 
         #[test]
         fn it_excludes_untagged_non_match() {
-            let result = filter_match(&[(None, "bar")], &["env"], "foo");
+            let mut filter_options = FilterOptions::default();
+            filter_options.filters = &[(None, "bar")];
+            let result = filter_options.filter_match(&["env"], "foo");
             assert_eq!(result, false)
         }
     }
@@ -162,31 +177,40 @@ mod tests {
 
         #[test]
         fn it_includes_all_values_when_empty() {
-            let result = filter_exclude(&[], &["env"], "foo");
+            let filter_options = FilterOptions::default();
+            let result = filter_options.filter_exclude(&["env"], "foo");
             assert_eq!(result, true)
         }
 
         #[test]
         fn it_excludes_untagged_match() {
-            let result = filter_exclude(&[(None, "foo")], &["env"], "foo");
+            let mut filter_options = FilterOptions::default();
+            filter_options.filter_exclusions = &[(None, "foo")];
+            let result = filter_options.filter_exclude(&["env"], "foo");
             assert_eq!(result, false)
         }
 
         #[test]
         fn it_excludes_tagged_matches() {
-            let result = filter_exclude(&[(Some("env"), "foo")], &["env"], "foo");
+            let mut filter_options = FilterOptions::default();
+            filter_options.filter_exclusions = &[(Some("env"), "foo")];
+            let result = filter_options.filter_exclude(&["env"], "foo");
             assert_eq!(result, false)
         }
 
         #[test]
         fn it_includes_non_matching_tag() {
-            let result = filter_exclude(&[(Some("not-env"), "foo")], &["env"], "foo");
+            let mut filter_options = FilterOptions::default();
+            filter_options.filter_exclusions = &[(Some("not-env"), "foo")];
+            let result = filter_options.filter_exclude(&["env"], "foo");
             assert_eq!(result, true)
         }
 
         #[test]
         fn it_includes_untagged_non_match() {
-            let result = filter_exclude(&[(None, "bar")], &["env"], "foo");
+            let mut filter_options = FilterOptions::default();
+            filter_options.filter_exclusions = &[(None, "bar")];
+            let result = filter_options.filter_exclude(&["env"], "foo");
             assert_eq!(result, true)
         }
     }
