@@ -21,7 +21,34 @@ environment variables.
 Core Goals:
 
 - Store all data centrally, not relative to the directory being sauced
+
 - Cascade data from parent directories downwards
+
+- [Docs](./doc)
+
+  - [Configuration Reference](./doc/config.md)
+  - [Flag and Subcommand Reference](./doc/options.md)
+  - [Comparison to other tools
+    (i.e. direnv/dotenv)](./doc/comparison.md)
+  - [Plans](./doc/plans.md)
+
+- [Example Workflow](#example-workflow)
+
+- [Setup](#setup)
+
+  - [Install](#install)
+  - [Shell Hook](#shell-hook)
+
+- [Targets](#targets)
+
+- [Features](#features)
+
+  - [sauce](#sauce)
+  - [Central Storage](#central-storage)
+  - [Cascaded Loading](#cascaded-loading)
+  - [Autoloading](#autoloading)
+
+- [Local Development](#local-development)
 
 ## Example Workflow
 
@@ -52,7 +79,7 @@ AWS_PROFILE=foo
 foo=bar
 ```
 
-## Installation
+## Setup
 
 ### Install
 
@@ -65,7 +92,7 @@ foo=bar
 - Download Linux/Mac binary from
   [Releases](https://github.com/DanCardin/sauce/releases)
 
-### Setup
+### Shell Hook
 
 Currently explicitly supported shells include: `zsh`, `bash`, and
 `fish`. The scaffolding exists to support other shells, which should
@@ -83,9 +110,6 @@ you will need to add add a hook to your bashrc/zshrc/config.fish, etc.
 Depending on the level of similarity to the above shells, you may be
 able to get away with using one of the above `shell init` hooks until
 explicit support is added
-
-See the [Configuration Reference](./doc/config.md) for available
-configuration options.
 
 ## Targets
 
@@ -111,200 +135,75 @@ Currently supported targets include:
   sauce set function add 'echo $(expr $1 + $2)'
   ```
 
-Planned/Ideally supported targets include:
-
-- functions
-- arbitrary kv
-
 ## Features
 
 ### `sauce` command
 
-The primary usecase is the `sauce` command. Explicitly no arguments, you
-load the environment with all sauce targets, cascaded from the uppermost
-parent.
+This is primary usecase is the `sauce` command, no subcommand, no
+arguments. This loads the current shell with all sauce targets (env
+vars, aliases, and function) which apply to the current directory.
 
-#### Cascades
+There are also a bunch of [options](./doc/options.md) to allow you to
+customize the behavior of `sauce`, for example `sauce --glob DATABASE*`,
+`sauce --filter env:AWS_PROFILE`, or `sauce --path ~`.
+
+### Central Storage
+
+The original motivation for central storage was due to getting a new
+computer and needing to comb through \~50 repos to find all the random
+`.env` files and gitignored notes and whatnot littered all over the
+place to make sure nothing got left behind.
+
+However just generally, colocating the sauce data with the actual folder
+introduces a number of technical, security, and usability issues that
+are circumvented through central storage.
+
+#### Cascaded loading
+
+A key feature of `sauce` is that values are loaded in a cascading
+fashion relative to the home directory.
+
+This makes it easier to compose targets (env vars, aliases, and shell
+functions) among various locations, likely by utilizing the natural
+directory structure you might already have.
 
 Given a directory structure
 
-  ~/
-      projects/
-          foo/
-              subfoo/
-          bar/
+    ~/
+      work/
+        project/
+          repo/
+          repo2/
+            src/
+        otherproject/
 
-You can run `sauce` at any folder level/depth, say `subfoo`. The values
-saved for the folders: `~`, `~/projects`, `~/projects/foo`, and
-`~/projects/foo/subfoo` will all be loaded.
+Support you run `sauce` at any folder level/depth, say
+`~/work/project/repo/`. The values saved for the folders: `~`, `~/work`,
+`~/work/project`, and `~/work/project/repo` will all be loaded.
 
 The more specific/deep folder’s values will take precedence over the
 values of more general/shallow folders.
 
 All saucefiles are located in the `$XDG_DATA_HOME/sauce` folder, after
 which the folder structure mirrors that of the folders who’s values are
-being tracked. Given the above example you might see:
+being tracked. Given the above example, if every folder had a saucefile,
+you might see:
 
-  ~/.local/share/sauce/
+    ~/.local/share/
+      sauce.toml
+      sauce/
+        project.toml
+        project/
+          repo.toml
+          repo2.toml
+          repo2/
+            src.toml
+        otherproject.toml
 
-          foo/
-              subfoo.toml
-          foo.toml
-          bar.toml
-      projects.toml
+### Autoloading
 
-### `sauce set <target-type> NAME=value`
-
-For example, `sauce set var AWS_PROFILE=foo FOO=bar`.
-
-This is convenient when you realize you want to `sauce` a var or
-whatever. There is also `sauce edit` which will open your `$EDITOR` so
-you can bulk update whatever values you like.
-
-### `sauce --as foo`
-
-Any key-value pair can be tagged with, you might call “namespaces”.
-
-Consider an env var definition
-
-``` toml
-AWS_PROFILE = {default = "projectname-dev", uat = "projectname-uat", prod = "projectname-prod"}
-```
-
-Given a `sauce`, you will get the “default” namespace
-(i.e. AWS\_PROFILE=projectname-dev) for this value, as well as all other
-unnamespaced values.
-
-Given `sauce --as prod`, you will get the “prod” namespace
-(i.e. AWS\_PROFILE=projectname-prod) for this value, as well as all
-other unnamespaced values.
-
-### `sauce --glob glob` and `sauce --filter filter`
-
-Either `--glob` and/or `--filter` can be applied in order to filter down
-the set of things which are returned from `sauce` (or any subcommand).
-
-You can supply multiple globs/filters by separating them by `,`,
-i.e. `--filter foo,bar,baz`.
-
-You can also specify globs/filters specific to a particular target,
-which might be important given that there can be overlap between
-targets. Targets are separated from their search term by `:`,
-i.e. `--glob env:database*,function:work-*`.
-
-### `sauce clear`
-
-`clear`ing will “unset” everything defined in any cascaded saucefiles,
-abiding by any options (–filter/–glob/–as) provided to the command.
-
-The general intent is that one would only/primarily be including targets
-which would be safe to unset (or that you will avoid running `clear` if
-that’s not true for you), given that they were overwritten when you run
-`sauce`.
-
-## Settings
-
-### direnv-like automatic execution of `sauce` on `cd`
-
-`sauce` loads configuration from `$XDG_CONFIG_HOME/sauce.toml`, and so
-generally this will be `~/.config/sauce.toml`.
-
-By default this feature is off (given that it changes the shell
-generated on `sauce shell init` and causes it to be executed on every
-`cd`).
-
-To enable, add:
-
-``` toml
-# Enables the shell hook which makes this feature possible.
-# You must start a new shell before autoload will work.
-autoload-hook = true
-
-# Enables the feature itself (globally).
-autoload = true
-```
-
-You can additionally/alternatively omit `autoload` from the global
-config, and instead opt to only include it in the saucefile for a given
-directory i.e.
-
-``` toml
-# ~/.local/share/sauce/work/example.toml
-[settings]
-autoload = true
-```
-
-Which allows you to globally opt in, globally opt out, locally opt in,
-or locally opt out.
-
-## Alternatives
-
-Why would you choose to use `sauce` over certain alternatives? `sauce`
-**does** have significant conceptual feature overlap with, in
-particular, `direnv`, but the additional features may make it worth
-using `sauce` instead!
-
-Features which distinguish `sauce` from **all** the below alternatives
-
-- Cascading loading of values from upstream directories
-
-  This makes it easier to compose targets (env vars, aliases, and shell
-  functions) among various locations, likely by utilizing the natural
-  directory structure you might already have.
-
-- Central storage of the values
-
-  The original motivation for central storage was due to getting a new
-  computer and needing to comb through 50 repos to find all the random
-  `.env` files littered all over the place to make sure nothing got left
-  behind.
-
-  In practice, I’ve found that there are numerous problems with storing
-  your (equivalent to `.env`/`.envrc` files locally to the repo. In fact
-  `direnv` added a whole additional feature `direnv allow` to work
-  around that fact.
-
-### `dotenv`
-
-`dotenv` is the more obvious of the two, which is specifically for the
-loading of environment variables, which is essentially the primary
-usecase of `sauce`.
-
-I find choice of `toml` files for `sauce`, while not necessarily
-important to the actual featureset of `sauce`, to be useful because it
-supports multiline strings.
-
-The main advantage, is `sauce --as <context>`. In order to reproduce
-this behavior, you need multiple dotenv files, (with all common values
-duplicated, or contained in yet another file).
-
-### `direnv`
-
-`direnv` may be less obvious, but given that it executes user-supplied
-shell code, directly, on `cd`, it can essentially do anything that
-`sauce` can do.
-
-The advantage, lies in the fact that `sauce` is specifically tailored to
-the usecases documented above. That means, it’s just a lot easier to get
-the behaviors of `sauce` compared to writing the shell code (for each
-project) which would enable things like `sauce --as prod` or
-`sauce --glob database*`.
-
-## Planned Work
-
-- ability to subdivide targets by shell
-
-  i.e. allow one to specify `[alias.fish]`.
-
-- `sauce config subshell=false/true` (default `false`)
-
-  Given subshell=true, a call to `sauce` would create a subprocess into
-  which the alterations would be made. This would enable one to simply
-  kill the current shell to revert state.
-
-- more targets: arbitrary key-value pairs
-
-- pipe `sauce show` to a pager when beyond a full terminal height
+See the [Configuration Reference](./doc/config.md) on `autoload-hook`
+and `autoload`.
 
 ## Local development
 
