@@ -1,5 +1,5 @@
 use crate::shell::kinds::{Bash, Fish, Zsh};
-use std::{env, str::FromStr};
+use std::{collections::VecDeque, env, str::FromStr};
 
 use crate::shell::Shell;
 
@@ -49,9 +49,33 @@ impl FromStr for ColorStrategy {
     }
 }
 
+pub fn unescape_newline(s: &str) -> String {
+    let mut queue: VecDeque<_> = String::from(s).chars().collect();
+    let mut s = String::new();
+
+    while let Some(c) = queue.pop_front() {
+        if c != '\\' {
+            s.push(c);
+            continue;
+        }
+
+        match queue.pop_front() {
+            Some('n') => s.push('\n'),
+            Some(c) => {
+                s.push('\\');
+                s.push(c);
+            }
+            _ => break,
+        };
+    }
+
+    s
+}
+
 /// Ensure proper quoting of any `value` being output to the containing shell.
 pub fn escape(value: &str) -> String {
-    snailquote::escape(&value.to_string()).replace("\\n", "\n")
+    let shell_value = snailquote::escape(&value).to_string();
+    unescape_newline(&shell_value)
 }
 
 pub fn get_binary() -> String {
@@ -90,6 +114,47 @@ pub fn should_be_colored(strategy: ColorStrategy) -> bool {
             } else {
                 false
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use indoc::indoc;
+
+    mod escape {
+        use super::super::*;
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[test]
+        fn it_leaves_vanilla_string_unchanged() {
+            let result = escape("foo");
+            assert_eq!(result, "foo");
+        }
+
+        #[test]
+        fn it_single_quotes_spaces() {
+            let result = escape("foo bar");
+            assert_eq!(result, "'foo bar'");
+        }
+
+        #[test]
+        fn it_double_quotes_single_quotes() {
+            let result = escape("foo'bar");
+            assert_eq!(result, "\"foo'bar\"");
+        }
+
+        #[test]
+        fn it_double_quotes_newlines() {
+            let result = escape("foo\nbar");
+            assert_eq!(result, "\"foo\nbar\"");
+        }
+
+        #[test]
+        fn it_doesnt_unescape_escaped_newlines() {
+            let result = escape("foo\\nbar");
+            assert_eq!(result, "\"foo\\\\nbar\"");
         }
     }
 }
