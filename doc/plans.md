@@ -1,8 +1,5 @@
 ## Planned Work
 
-- Multiline newline escaping (test to verify it works, without breaking
-  the normal ssl thingy)
-
 - `sauce config color=false` color setting, to be composed on top of the
   existing color choosing options
 

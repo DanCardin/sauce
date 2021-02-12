@@ -1,4 +1,4 @@
-.PHONY: test build lint format
+.PHONY: test build lint format changelog
 
 test:
 	cargo test
@@ -13,3 +13,6 @@ lint:
 
 format:
 	cargo fmt
+
+changelog:
+	jilu | sponge CHANGELOG.md
