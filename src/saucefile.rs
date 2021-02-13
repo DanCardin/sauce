@@ -1,4 +1,4 @@
-use crate::{filter::FilterOptions, Context};
+use crate::{filter::FilterOptions, output::Output, Context};
 use crate::{settings::Settings, toml::unwrap_toml_value};
 use indexmap::IndexMap;
 use itertools::iproduct;
@@ -15,7 +15,7 @@ pub struct Saucefile {
 }
 
 impl Saucefile {
-    pub fn read(context: &mut Context) -> Self {
+    pub fn read(context: &mut Context, output: &mut Output) -> Self {
         let mut base_sf = Self {
             path: context.sauce_path.clone(),
             ..Default::default()
@@ -28,7 +28,7 @@ impl Saucefile {
                 continue;
             }
 
-            let document = get_document(&path, &mut context.output);
+            let document = get_document(&path, output);
 
             if paths.peek().is_some() {
                 base_sf.ancestors.push(document)
@@ -43,11 +43,7 @@ impl Saucefile {
         Settings::from_document(self.path.clone(), &self.document)
     }
 
-    fn section(
-        &mut self,
-        sections: &[&str],
-        filter_options: &FilterOptions,
-    ) -> Vec<(&str, String)> {
+    fn section(&self, sections: &[&str], filter_options: &FilterOptions) -> Vec<(&str, String)> {
         let tag = filter_options.as_.unwrap_or("default");
 
         let documents = self.ancestors.iter().chain(vec![&self.document]);
@@ -83,15 +79,15 @@ impl Saucefile {
             .collect()
     }
 
-    pub fn vars(&mut self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
+    pub fn vars(&self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
         self.section(&["env", "environment"], filter_options)
     }
 
-    pub fn aliases(&mut self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
+    pub fn aliases(&self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
         self.section(&["alias"], filter_options)
     }
 
-    pub fn functions(&mut self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
+    pub fn functions(&self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
         self.section(&["function"], filter_options)
     }
 }
@@ -259,20 +255,10 @@ mod tests {
 
         #[test]
         fn it_yields_empty_when_empty() {
-            let mut sauce = Saucefile::default();
+            let sauce = Saucefile::default();
             let result = sauce.vars(&FilterOptions::default());
             assert_eq!(result, &[]);
         }
-
-        // #[test]
-        // fn it_roundtrips_value() {
-        //     let mut sauce = Saucefile::default();
-
-        //     sauce.set_var("meow", "5");
-        //     let result = sauce.vars(&FilterOptions::default());
-
-        //     assert_eq!(result, vec![("meow", "5".to_string())]);
-        // }
     }
 
     mod aliases {
@@ -281,20 +267,10 @@ mod tests {
 
         #[test]
         fn it_yields_empty_when_empty() {
-            let mut sauce = Saucefile::default();
+            let sauce = Saucefile::default();
             let result = sauce.aliases(&FilterOptions::default());
             assert_eq!(result, &[]);
         }
-
-        // #[test]
-        // fn it_roundtrips_value() {
-        //     let mut sauce = Saucefile::default();
-
-        //     sauce.set_alias("meow", "5");
-        //     let result = sauce.aliases(&FilterOptions::default());
-
-        //     assert_eq!(result, vec![("meow", "5".to_string())]);
-        // }
     }
 
     mod functions {
@@ -303,19 +279,9 @@ mod tests {
 
         #[test]
         fn it_yields_empty_when_empty() {
-            let mut sauce = Saucefile::default();
+            let sauce = Saucefile::default();
             let result = sauce.functions(&FilterOptions::default());
             assert_eq!(result, &[]);
         }
-
-        // #[test]
-        // fn it_roundtrips_value() {
-        //     let mut sauce = Saucefile::default();
-
-        //     sauce.set_function("meow", "5");
-        //     let result = sauce.functions(&FilterOptions::default());
-
-        //     assert_eq!(result, vec![("meow", "5".to_string())]);
-        // }
     }
 }

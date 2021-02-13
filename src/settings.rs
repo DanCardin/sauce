@@ -2,7 +2,6 @@ use crate::{
     colors::{RED, YELLOW},
     output::ErrorCode,
 };
-use anyhow::Result;
 use std::{
     fmt::Display,
     path::{Path, PathBuf},
@@ -12,18 +11,18 @@ use crate::{output::Output, toml::get_document};
 use toml_edit::{Document, Item, Table, Value};
 
 #[derive(Debug)]
-pub struct RealizedSettings<'a> {
+pub struct RealizedSettings {
     pub autoload_hook: bool,
     pub autoload: bool,
-    pub clear_ignore: &'a [String],
+    pub clear_ignore: Vec<String>,
 }
 
-impl<'a> Default for RealizedSettings<'a> {
+impl Default for RealizedSettings {
     fn default() -> Self {
         Self {
             autoload_hook: false,
             autoload: false,
-            clear_ignore: &[],
+            clear_ignore: Vec::new(),
         }
     }
 }
@@ -37,10 +36,10 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn load(config_dir: &Path, output: &mut Output) -> Result<Self> {
+    pub fn load(config_dir: &Path, output: &mut Output) -> Self {
         let file = config_dir.with_extension("toml");
         let document = get_document(&file, output);
-        Ok(Self::from_document(file, &document))
+        Self::from_document(file, &document)
     }
 
     pub fn from_document(file: PathBuf, document: &Document) -> Self {
@@ -71,7 +70,7 @@ impl Settings {
                 default.autoload = v;
             }
             if let Some(v) = &settings.clear_ignore {
-                default.clear_ignore = v.as_slice();
+                default.clear_ignore = v.to_vec();
             }
         }
         default
