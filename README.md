@@ -18,11 +18,7 @@
 A tool to help manage context/project specific shell-things like
 environment variables.
 
-Core Goals:
-
-- Store all data centrally, not relative to the directory being sauced
-
-- Cascade data from parent directories downwards
+## Table of Contents
 
 - [Docs](./doc)
 
@@ -58,8 +54,6 @@ Core Goals:
 ❯ cd foo
 
 # You want to start recording things here
-❯ sauce
-No file at ~/.local/share/sauce/foo.toml
 ❯ sauce new
 
 # My "foo" project has got some corresponding aws profile
@@ -73,6 +67,7 @@ No file at ~/.local/share/sauce/foo.toml
 ❯ sauce
 Sourced ~/.local/share/sauce/foo/bar.toml
 
+# Note the cascaded loading of upstream values!
 ❯ env
 ...
 AWS_PROFILE=foo
