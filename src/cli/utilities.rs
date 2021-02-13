@@ -1,18 +1,19 @@
-use std::error::Error;
+use anyhow::{anyhow, Result};
 use std::io::Read;
+use std::str::FromStr;
 
 /// Parse a single key-value pair
-pub fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error>>
+pub fn parse_key_val<T: FromStr>(s: &str) -> Result<(T, T)>
 where
-    T: std::str::FromStr,
-    T::Err: Error + 'static,
-    U: std::str::FromStr,
-    U::Err: Error + 'static,
+    <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
 {
-    let pos = s
-        .find('=')
-        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
-    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
+    let mut iter = s.splitn(2, '=');
+    let first = iter.next();
+    let second = iter.next();
+    match (first, second) {
+        (Some(first), Some(second)) => Ok((first.parse()?, second.parse()?)),
+        _ => Err(anyhow!("Invalid KEY=value: no `=` found in `{}`", s)),
+    }
 }
 
 /// Accept data from stdin
@@ -39,4 +40,36 @@ pub fn get_input(values: &[(String, String)]) -> Vec<(String, String)> {
     }
 
     result
+}
+
+#[cfg(test)]
+mod tests {
+    mod parse_key_val {
+        use super::super::*;
+        use pretty_assertions::assert_eq;
+
+        #[test]
+        fn it_works_with_one_equals() {
+            let (key, value): (String, String) = parse_key_val("meow=bar").unwrap();
+            assert_eq!(key, "meow".to_string());
+            assert_eq!(value, "bar".to_string());
+        }
+
+        #[test]
+        fn it_works_with_2_plus_equals() {
+            let (key, value): (String, String) = parse_key_val("meow=bar=bar2=bar3").unwrap();
+            assert_eq!(key, "meow".to_string());
+            assert_eq!(value, "bar=bar2=bar3".to_string());
+        }
+
+        #[test]
+        fn it_fails() {
+            let result: Result<(String, String)> = parse_key_val("meow");
+            let error = result.err().unwrap();
+            assert_eq!(
+                format!("{}", error),
+                "Invalid KEY=value: no `=` found in `meow`".to_string()
+            );
+        }
+    }
 }

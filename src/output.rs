@@ -5,12 +5,7 @@ use crate::{
 };
 use anyhow::Result;
 use comfy_table::{Attribute, Cell, ContentArrangement, Row, Table};
-use std::{
-    fmt::Display,
-    io::{stderr, stdout, Write},
-    ops::Deref,
-    path::Path,
-};
+use std::{fmt::Display, io::Write, ops::Deref, path::Path};
 use toml_edit::{Document, Item};
 
 use ansi_term::{ANSIString, ANSIStrings};
@@ -208,20 +203,6 @@ impl Output {
 
         if !self.show {
             write_document(file, document, self);
-        }
-    }
-}
-
-impl Default for Output {
-    fn default() -> Self {
-        Self {
-            out: Box::new(stdout()),
-            err: Box::new(stderr()),
-            color: true,
-            quiet: false,
-            verbose: false,
-            show: false,
-            code: None,
         }
     }
 }
