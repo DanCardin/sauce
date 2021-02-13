@@ -86,7 +86,7 @@ impl Settings {
         let values = pairs
             .iter()
             .filter_map(|(setting, value)| match setting.as_ref() {
-                "autoload" | "autoload-hook" => {
+                "autoload" | "autoload-hook" | "clear-ignore" => {
                     if let Ok(parsed_value) = value.as_ref().parse::<Value>() {
                         Some((setting.as_ref(), toml_edit::value(parsed_value)))
                     } else {
