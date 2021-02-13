@@ -2,11 +2,11 @@ use anyhow::Result;
 use etcetera::home_dir;
 use std::path::PathBuf;
 use std::{env, path::Path};
+use toml_edit::Item;
 
 use crate::{
-    colors::{BLUE, RED, YELLOW},
     filter::FilterOptions,
-    output::{ErrorCode, Output},
+    output::Output,
     saucefile::Saucefile,
     settings::Settings,
     shell::{actions, Shell},
@@ -75,7 +75,11 @@ impl<'a> Context<'a> {
 
     fn load_saucefile(&mut self, output: &mut Output) {
         if self._saucefile.is_none() {
-            self._saucefile = Some(Saucefile::read(self, output));
+            self._saucefile = Some(Saucefile::read(
+                output,
+                &self.sauce_path,
+                self.cascade_paths(),
+            ));
         }
     }
 
@@ -108,7 +112,7 @@ impl<'a> Context<'a> {
     pub fn init_shell(&mut self, shell_kind: &dyn Shell, output: &mut Output) {
         self.load_settings(output);
         let autoload_hook = self.settings().autoload_hook.unwrap_or(false);
-        actions::init(shell_kind, output, autoload_hook)
+        actions::init(output, shell_kind, autoload_hook)
     }
 
     pub fn execute_shell_command(
@@ -117,53 +121,20 @@ impl<'a> Context<'a> {
         command: &str,
         output: &mut Output,
     ) {
-        actions::execute_shell_command(shell_kind, command, output)
+        actions::execute_shell_command(output, shell_kind, command)
     }
 
     pub fn create_saucefile(&mut self, output: &mut Output) {
-        let parent = self.sauce_path.parent().unwrap();
-        if std::fs::create_dir_all(parent).is_err() {
-            output.notify_error(
-                ErrorCode::WriteError,
-                &[
-                    RED.paint("Couldn't create "),
-                    YELLOW.paint(parent.to_string_lossy()),
-                ],
-            );
-            return;
-        }
-
-        if self.sauce_path.is_file() {
-            output.notify_error(
-                ErrorCode::WriteError,
-                &[
-                    RED.bold().paint("File already exists at "),
-                    YELLOW.paint(self.sauce_path.to_string_lossy()),
-                ],
-            );
-        } else if std::fs::File::create(&self.sauce_path).is_err() {
-            output.notify_error(
-                ErrorCode::WriteError,
-                &[
-                    RED.bold().paint("Couldn't create"),
-                    YELLOW.paint(self.sauce_path.to_string_lossy()),
-                ],
-            );
-        } else {
-            output.notify(&[
-                BLUE.bold().paint("Created"),
-                YELLOW.paint(self.sauce_path.to_string_lossy()),
-            ]);
-        }
+        actions::create_saucefile(output, &self.sauce_path);
     }
 
     pub fn edit_saucefile(&mut self, shell_kind: &dyn Shell, output: &mut Output) {
-        actions::edit(shell_kind, output, &self.sauce_path);
+        actions::edit(output, shell_kind, &self.sauce_path);
     }
 
     pub fn show(&mut self, target: Target, output: &mut Output) {
         self.load_saucefile(output);
-        actions::show(&self.filter_options, target, self.saucefile(), output);
+        actions::show(output, &self.filter_options, target, self.saucefile());
     }
 
     pub fn clear(&mut self, shell_kind: &dyn Shell, output: &mut Output) {
@@ -171,11 +142,11 @@ impl<'a> Context<'a> {
         self.load_saucefile(output);
 
         actions::clear(
+            output,
             shell_kind,
             self.saucefile(),
             self.settings(),
             &self.filter_options,
-            output,
         );
     }
 
@@ -183,12 +154,12 @@ impl<'a> Context<'a> {
         self.load_saucefile(output);
         self.load_settings(output);
         actions::execute(
+            output,
             shell_kind,
             self.saucefile(),
             self.settings(),
             &self.filter_options,
             autoload,
-            output,
         );
     }
 
@@ -216,13 +187,7 @@ impl<'a> Context<'a> {
             .map(|(name, raw_value)| (name, value_from_string(raw_value.as_ref())))
             .collect::<Vec<_>>();
 
-        let path = self.sauce_path.clone();
-        output.write_toml(
-            &path,
-            &mut self.saucefile_mut().document,
-            "environment",
-            values,
-        );
+        self.set_values(output, "environment", values);
     }
 
     pub fn set_alias<T: AsRef<str>>(&mut self, raw_values: &[(T, T)], output: &mut Output) {
@@ -233,21 +198,25 @@ impl<'a> Context<'a> {
             .map(|(name, raw_value)| (name, value_from_string(raw_value.as_ref())))
             .collect::<Vec<_>>();
 
-        let path = self.sauce_path.clone();
-        output.write_toml(&path, &mut self.saucefile_mut().document, "alias", values);
+        self.set_values(output, "alias", values);
     }
 
     pub fn set_function(&mut self, name: &str, body: &str, output: &mut Output) {
         self.load_saucefile(output);
         let values = vec![(name, value_from_string(body))];
 
-        let path = self.sauce_path.clone();
-        output.write_toml(
-            &path,
-            &mut self.saucefile_mut().document,
-            "function",
-            values,
-        );
+        self.set_values(output, "function", values);
+    }
+
+    fn set_values<I, T>(&mut self, output: &mut Output, section: &str, values: I)
+    where
+        I: IntoIterator<Item = (T, Item)>,
+        T: AsRef<str>,
+    {
+        let path = &self.sauce_path.clone();
+        let document = &mut self.saucefile_mut().document;
+
+        output.write_toml(path, document, section, values);
     }
 
     pub fn set_config<T: AsRef<str>>(

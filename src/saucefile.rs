@@ -1,10 +1,10 @@
-use crate::{filter::FilterOptions, output::Output, Context};
+use crate::{filter::FilterOptions, output::Output};
 use crate::{settings::Settings, toml::unwrap_toml_value};
 use indexmap::IndexMap;
 use itertools::iproduct;
 
 use crate::toml::get_document;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use toml_edit::{Document, Item, Value};
 
 #[derive(Debug)]
@@ -15,14 +15,16 @@ pub struct Saucefile {
 }
 
 impl Saucefile {
-    pub fn read(context: &mut Context, output: &mut Output) -> Self {
+    pub fn read<T>(output: &mut Output, path: &Path, ancestors: T) -> Self
+    where
+        T: IntoIterator<Item = PathBuf>,
+    {
         let mut base_sf = Self {
-            path: context.sauce_path.clone(),
+            path: path.to_path_buf(),
             ..Default::default()
         };
 
-        let paths = context.cascade_paths();
-        let mut paths = paths.peekable();
+        let mut paths = ancestors.into_iter().peekable();
         while let Some(path) = paths.next() {
             if !path.is_file() {
                 continue;
