@@ -2,7 +2,7 @@ use glob::Pattern;
 
 pub type MatchOption<'a> = (Option<&'a str>, &'a str);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FilterOptions<'a> {
     pub as_: Option<&'a str>,
 

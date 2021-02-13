@@ -6,7 +6,7 @@ use std::{
     str,
 };
 
-use crate::{output::Output, shell::Shell, Context};
+use crate::{output::Output, shell::Shell};
 
 pub fn mkpath(path: &str) -> PathBuf {
     Path::new(path).canonicalize().unwrap()
@@ -80,14 +80,11 @@ impl Write for MockWriter {
     }
 }
 
-pub fn setup<'a>() -> (MockWriter, MockWriter, Context<'a>) {
+pub fn setup() -> (MockWriter, MockWriter, Output) {
     let out = MockWriter::default();
     let err = MockWriter::default();
 
-    let context = Context {
-        output: Output::new(Box::new(out.clone()), Box::new(err.clone())),
-        ..Default::default()
-    };
+    let output = Output::new(Box::new(out.clone()), Box::new(err.clone()));
 
-    (out, err, context)
+    (out, err, output)
 }

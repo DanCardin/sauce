@@ -15,6 +15,11 @@ pub fn get_document(path: &Path, output: &mut Output) -> Document {
     file_contents(path, content, output)
 }
 
+pub fn write_document(file: &Path, document: &Document, output: &mut Output) {
+    let handle = OpenOptions::new().write(true).open(&file);
+    write_contents(handle, file, document, output);
+}
+
 fn read_file(path: &Path) -> String {
     if let Ok(file) = std::fs::File::open(path) {
         let mut reader = BufReader::new(file);
@@ -42,9 +47,14 @@ fn file_contents(path: &Path, contents: String, output: &mut Output) -> Document
     })
 }
 
-pub fn write_document(file: &Path, document: &Document, output: &mut Output) {
-    if let Ok(file) = OpenOptions::new().write(true).open(&file) {
-        let mut buffer = BufWriter::new(file);
+pub fn write_contents<W: Write>(
+    handle: Result<W, std::io::Error>,
+    file: &Path,
+    document: &Document,
+    output: &mut Output,
+) {
+    if let Ok(f) = handle {
+        let mut buffer = BufWriter::new(f);
         buffer
             .write_all(document.to_string().as_ref())
             .unwrap_or_else(|_| {
@@ -63,7 +73,7 @@ pub fn write_document(file: &Path, document: &Document, output: &mut Output) {
         output.notify_error(
             ErrorCode::WriteError,
             &[
-                RED.bold().paint("Could not open"),
+                RED.bold().paint("Could not open "),
                 YELLOW.bold().paint(file.to_string_lossy()),
             ],
         );
@@ -92,5 +102,51 @@ pub fn unwrap_toml_value(value: &Value) -> String {
         Value::Boolean(_) => value.as_bool().unwrap().to_string(),
         Value::Float(_) => value.as_float().unwrap().to_string(),
         Value::DateTime(_) => value.as_date_time().unwrap().to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    mod write_contents {
+        use crate::test_utils::setup;
+
+        use super::super::*;
+        use pretty_assertions::assert_eq;
+
+        #[test]
+        fn it_writes_contents() {
+            let mut file = Vec::new();
+
+            let toml = r#"
+            [foo]
+            bar = "baz"
+            "#;
+            let document = toml.parse::<Document>().expect("invalid doc");
+
+            let (_, _, mut output) = setup();
+
+            write_contents(
+                Ok(&mut file),
+                Path::new("test.toml"),
+                &document,
+                &mut output,
+            );
+            assert_eq!(std::str::from_utf8(&file).unwrap(), toml.to_string());
+        }
+
+        #[test]
+        fn it_fails_on_file_error() {
+            let document = "".parse::<Document>().expect("invalid doc");
+
+            let (_, err, mut output) = setup();
+
+            write_contents::<Vec<u8>>(
+                Err(std::io::Error::new(std::io::ErrorKind::Other, "oh no!")),
+                Path::new("test.toml"),
+                &document,
+                &mut output,
+            );
+            assert_eq!(err.value(), "Could not open test.toml\n");
+        }
     }
 }

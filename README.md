@@ -158,7 +158,7 @@ However just generally, colocating the sauce data with the actual folder
 introduces a number of technical, security, and usability issues that
 are circumvented through central storage.
 
-#### Cascaded loading
+### Cascaded loading
 
 A key feature of `sauce` is that values are loaded in a cascading
 fashion relative to the home directory.
