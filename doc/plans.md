@@ -1,8 +1,5 @@
 ## Planned Work
 
-- `sauce config color=false` color setting, to be composed on top of the
-  existing color choosing options
-
 - `sauce move . ../newpath`
 
   Moves the saucefile from one location to another, to be used when the

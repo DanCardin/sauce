@@ -3,14 +3,14 @@ use std::path::Path;
 use crate::{
     colors::{BLUE, RED, YELLOW},
     filter::{parse_match_option, FilterOptions},
-    output::Output,
+    output::{ErrorCode, Output},
     saucefile::Saucefile,
     settings::Settings,
     shell::{utilities::get_binary, Shell},
     target::Target,
 };
 
-pub fn edit(shell: &dyn Shell, output: &mut Output, path: &Path) {
+pub fn edit(output: &mut Output, shell: &dyn Shell, path: &Path) {
     let path = path.to_string_lossy();
     output.notify(&[BLUE.paint("Opening "), YELLOW.paint(path.as_ref())]);
 
@@ -21,13 +21,13 @@ pub fn edit(shell: &dyn Shell, output: &mut Output, path: &Path) {
     }
 }
 
-pub fn init(shell: &dyn Shell, output: &mut Output, autoload_hook: bool) {
+pub fn init(output: &mut Output, shell: &dyn Shell, autoload_hook: bool) {
     let binary = get_binary();
     let result = shell.init(&binary, autoload_hook);
     output.output(result);
 }
 
-pub fn execute_shell_command(shell: &dyn Shell, command: &str, output: &mut Output) {
+pub fn execute_shell_command(output: &mut Output, shell: &dyn Shell, command: &str) {
     let result = subprocess::Exec::cmd(shell.name())
         .arg("-i")
         .arg("-c")
@@ -40,12 +40,49 @@ pub fn execute_shell_command(shell: &dyn Shell, command: &str, output: &mut Outp
     }
 }
 
+pub fn create_saucefile(output: &mut Output, sauce_path: &Path) {
+    let parent = sauce_path.parent().unwrap();
+    if std::fs::create_dir_all(parent).is_err() {
+        output.notify_error(
+            ErrorCode::WriteError,
+            &[
+                RED.paint("Couldn't create "),
+                YELLOW.paint(parent.to_string_lossy()),
+            ],
+        );
+        return;
+    }
+
+    if sauce_path.is_file() {
+        output.notify_error(
+            ErrorCode::WriteError,
+            &[
+                RED.bold().paint("File already exists at "),
+                YELLOW.paint(sauce_path.to_string_lossy()),
+            ],
+        );
+    } else if std::fs::File::create(&sauce_path).is_err() {
+        output.notify_error(
+            ErrorCode::WriteError,
+            &[
+                RED.bold().paint("Couldn't create"),
+                YELLOW.paint(sauce_path.to_string_lossy()),
+            ],
+        );
+    } else {
+        output.notify(&[
+            BLUE.bold().paint("Created"),
+            YELLOW.paint(sauce_path.to_string_lossy()),
+        ]);
+    }
+}
+
 pub fn clear(
+    output: &mut Output,
     shell: &dyn Shell,
     saucefile: &Saucefile,
     global_settings: &Settings,
     filter_options: &FilterOptions,
-    output: &mut Output,
 ) {
     let local_settings = saucefile.settings();
     let settings = local_settings.resolve_precedence(global_settings);
@@ -74,10 +111,10 @@ pub fn clear(
 }
 
 pub fn show(
+    output: &mut Output,
     filter_options: &FilterOptions,
     target: Target,
     saucefile: &Saucefile,
-    output: &mut Output,
 ) {
     let header = match target {
         Target::EnvVar => &["Variable", "Value"],
@@ -106,12 +143,12 @@ pub fn show(
 }
 
 pub fn execute(
+    output: &mut Output,
     shell: &dyn Shell,
     saucefile: &Saucefile,
     global_settings: &Settings,
     filter_options: &FilterOptions,
     autoload_flag: bool,
-    output: &mut Output,
 ) {
     // The `autoload_flag` indicates that the "context" of the execution is happening during
     // an autoload, i.e. `cd`. It's the precondition for whether we need to check the settings to
@@ -175,7 +212,7 @@ mod tests {
             let (out, err, mut output) = setup();
 
             let shell = TestShell {};
-            edit(&shell, &mut output, &Path::new("foo/bar"));
+            edit(&mut output, &shell, &Path::new("foo/bar"));
 
             assert_eq!(out.value(), "edit 'foo/bar'\n");
             assert_eq!(err.value(), "Opening foo/bar\n");
@@ -191,7 +228,7 @@ mod tests {
         fn it_defaults() {
             let (out, err, mut output) = setup();
             let shell = TestShell {};
-            init(&shell, &mut output, false);
+            init(&mut output, &shell, false);
 
             assert_eq!(out.value(), "sauce\n");
             assert_eq!(err.value(), "");
@@ -202,7 +239,7 @@ mod tests {
             let (out, err, mut output) = setup();
             let shell = TestShell {};
 
-            init(&shell, &mut output, true);
+            init(&mut output, &shell, true);
 
             assert_eq!(out.value(), "sauce --autoload\n");
             assert_eq!(err.value(), "");
@@ -230,11 +267,11 @@ mod tests {
             section["fn"] = value_from_string("fnvalue");
 
             clear(
+                &mut output,
                 &shell,
                 &mut saucefile,
                 &Settings::default(),
                 &FilterOptions::default(),
-                &mut output,
             );
 
             assert_eq!(out.value(), "unset var;\n\nunalias alias;\n\nunset fn;\n\n");
@@ -256,10 +293,10 @@ mod tests {
             section["var"] = value_from_string("varvalue");
 
             show(
+                &mut output,
                 &FilterOptions::default(),
                 Target::EnvVar,
                 &mut saucefile,
-                &mut output,
             );
 
             assert_eq!(out.value(), "");
@@ -286,10 +323,10 @@ mod tests {
             section["alias"] = value_from_string("aliasvalue");
 
             show(
+                &mut output,
                 &FilterOptions::default(),
                 Target::Alias,
                 &saucefile,
-                &mut output,
             );
 
             assert_eq!(out.value(), "");
@@ -316,10 +353,10 @@ mod tests {
             section["function"] = value_from_string("git add\ngit commit");
 
             show(
+                &mut output,
                 &FilterOptions::default(),
                 Target::Function,
                 &saucefile,
-                &mut output,
             );
 
             assert_eq!(out.value(), "");
@@ -360,12 +397,12 @@ mod tests {
             section["fn"] = value_from_string("fnvalue");
 
             execute(
+                &mut output,
                 &shell,
                 &saucefile,
                 &Settings::default(),
                 &FilterOptions::default(),
                 false,
-                &mut output,
             );
 
             assert_eq!(
@@ -381,12 +418,12 @@ mod tests {
             let (out, err, mut output) = setup();
 
             execute(
+                &mut output,
                 &shell,
                 &Saucefile::default(),
                 &Settings::default(),
                 &FilterOptions::default(),
                 true,
-                &mut output,
             );
 
             assert_eq!(out.value(), "");
