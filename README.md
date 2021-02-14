@@ -49,29 +49,35 @@ environment variables.
 ## Example Workflow
 
 ``` bash
-# Suppose you've got some new directory structure
-❯ mkdir -p foo/bar
-❯ cd foo
+# Suppose you've got some directory structure
+❯ mkdir -p projects/foo
+❯ cd projects
 
-# You want to start recording things here
+# In "projects", you want some shorthand for quickly pushing your branches
 ❯ sauce new
+Created /Users/danc/.local/share/sauce/projects.toml
 
-# My "foo" project has got some corresponding aws profile
-❯ sauce set var AWS_PROFILE=foo
+❯ sauce set alias push='git push origin "$(git rev-parse --abbrev-ref HEAD)"'
+Setting push = git push origin "$(git rev-parse --abbrev-ref HEAD)"
 
-# The "bar" subdirectory has something more specific
-❯ cd bar
-❯ sauce set var foo=bar
+# Your project is, naturally, using 12-factor methodology, so you've got some
+# project specific environment variables you need to load!
+❯ cd foo
+❯ sauce set env foo=bar AWS_PROFILE=meow
+Setting foo = bar
+Setting AWS_PROFILE = meow
 
 # The core purpose!
 ❯ sauce
-Sourced ~/.local/share/sauce/foo/bar.toml
+Sourced ~/.local/share/sauce/projects/foo.toml
 
-# Note the cascaded loading of upstream values!
 ❯ env
 ...
-AWS_PROFILE=foo
+AWS_PROFILE=meow
 foo=bar
+
+# Note the cascaded loading of upstream values!
+❯ push
 ```
 
 ## Setup
@@ -115,7 +121,7 @@ Currently supported targets include:
 - environment variables
 
   ``` bash
-  sauce set var FOO=bar
+  sauce set env FOO=bar
   ```
 
 - aliases

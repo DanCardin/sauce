@@ -94,7 +94,7 @@ structure).
 
 ## `sauce set <target-type> NAME=value`
 
-For example, `sauce set var AWS_PROFILE=foo FOO=bar`.
+For example, `sauce set env AWS_PROFILE=foo FOO=bar`.
 
 This is convenient when you realize you want to `sauce` a singular var.
 There is also `sauce edit` command which will open your `$EDITOR` so you
