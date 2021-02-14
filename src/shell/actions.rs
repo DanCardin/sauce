@@ -65,13 +65,13 @@ pub fn create_saucefile(output: &mut Output, sauce_path: &Path) {
         output.notify_error(
             ErrorCode::WriteError,
             &[
-                RED.bold().paint("Couldn't create"),
+                RED.bold().paint("Couldn't create "),
                 YELLOW.paint(sauce_path.to_string_lossy()),
             ],
         );
     } else {
         output.notify(&[
-            BLUE.bold().paint("Created"),
+            BLUE.bold().paint("Created "),
             YELLOW.paint(sauce_path.to_string_lossy()),
         ]);
     }
