@@ -77,6 +77,32 @@ pub fn create_saucefile(output: &mut Output, sauce_path: &Path) {
     }
 }
 
+pub fn move_saucefile(output: &mut Output, source: &Path, destination: &Path, copy: bool) {
+    let result = if copy {
+        std::fs::copy(source, destination).map(|_| ())
+    } else {
+        std::fs::rename(source, destination)
+    };
+
+    if result.is_ok() {
+        let message = &[
+            BLUE.paint("Successfully moved "),
+            YELLOW.paint(source.to_string_lossy()),
+            BLUE.paint(" to "),
+            YELLOW.paint(destination.to_string_lossy()),
+        ];
+        output.notify(message);
+    } else {
+        let message = &[
+            RED.paint("Failed to move "),
+            YELLOW.paint(source.to_string_lossy()),
+            RED.paint(" to "),
+            YELLOW.paint(destination.to_string_lossy()),
+        ];
+        output.notify_error(ErrorCode::WriteError, message);
+    }
+}
+
 pub fn clear(
     output: &mut Output,
     shell: &dyn Shell,

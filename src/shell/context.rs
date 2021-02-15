@@ -1,12 +1,13 @@
 use anyhow::Result;
-use etcetera::home_dir;
+use path_absolutize::Absolutize;
 use std::path::PathBuf;
 use std::{env, path::Path};
 use toml_edit::Item;
 
 use crate::{
+    colors::RED,
     filter::FilterOptions,
-    output::Output,
+    output::{ErrorCode, Output},
     saucefile::Saucefile,
     settings::Settings,
     shell::{actions, Shell},
@@ -16,12 +17,13 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Context<'a> {
-    pub filter_options: FilterOptions<'a>,
+    filter_options: FilterOptions<'a>,
 
-    pub data_dir: PathBuf,
-    pub config_dir: PathBuf,
+    data_dir: PathBuf,
+    config_dir: PathBuf,
+    home_dir: PathBuf,
 
-    pub path: PathBuf,
+    path: PathBuf,
     pub sauce_path: PathBuf,
 
     _settings: Option<Settings>,
@@ -32,6 +34,7 @@ impl<'a> Context<'a> {
     pub fn new(
         data_dir: PathBuf,
         config_dir: PathBuf,
+        home_dir: PathBuf,
         filter_options: FilterOptions<'a>,
         path: Option<&'a str>,
         file: Option<&'a str>,
@@ -46,18 +49,16 @@ impl<'a> Context<'a> {
                     env::current_dir()?
                 };
 
-                let path = path.canonicalize()?;
+                let path = path.absolutize()?;
 
-                let home = home_dir()?;
-
-                let relative_path = path.strip_prefix(&home)?;
+                let relative_path = path.strip_prefix(&home_dir)?;
                 let sauce_path = data_dir.join(relative_path).with_extension("toml");
-                (path, sauce_path, data_dir)
+                (path.to_path_buf(), sauce_path, data_dir)
             }
             // The default case, where no `file` is supplied. We perform normal
             // path lookup and saucefile cascading behavior.
             Some(file) => {
-                let file = Path::new(file).to_path_buf().canonicalize()?;
+                let file = Path::new(file).absolutize()?.to_path_buf();
 
                 (file.clone(), file, "".into())
             }
@@ -65,6 +66,7 @@ impl<'a> Context<'a> {
         Ok(Self {
             data_dir,
             config_dir,
+            home_dir,
             filter_options,
             path,
             sauce_path,
@@ -126,6 +128,30 @@ impl<'a> Context<'a> {
 
     pub fn create_saucefile(&mut self, output: &mut Output) {
         actions::create_saucefile(output, &self.sauce_path);
+    }
+
+    pub fn move_saucefile(&self, output: &mut Output, destination: &Path, copy: bool) {
+        let source = &self.sauce_path;
+
+        let destination = match destination.absolutize() {
+            Ok(d) => d,
+            Err(_) => {
+                output.notify_error(
+                    ErrorCode::WriteError,
+                    &[RED.paint("Path is not relative to the home directory")],
+                );
+                return;
+            }
+        };
+        if let Ok(relative_path) = destination.strip_prefix(&self.home_dir) {
+            let dest = self.data_dir.join(relative_path).with_extension("toml");
+            actions::move_saucefile(output, source, &dest, copy);
+        } else {
+            output.notify_error(
+                ErrorCode::WriteError,
+                &[RED.paint("Path is not relative to the home directory")],
+            );
+        }
     }
 
     pub fn edit_saucefile(&mut self, shell_kind: &dyn Shell, output: &mut Output) {
@@ -242,6 +268,7 @@ impl<'a> Default for Context<'a> {
             filter_options: FilterOptions::default(),
             data_dir: PathBuf::new(),
             config_dir: PathBuf::new(),
+            home_dir: PathBuf::new(),
             path: PathBuf::new(),
             sauce_path: PathBuf::new(),
             _saucefile: None,
