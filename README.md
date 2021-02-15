@@ -26,7 +26,6 @@ environment variables.
   - [Flag and Subcommand Reference](./doc/options.md)
   - [Comparison to other tools
     (i.e. direnv/dotenv)](./doc/comparison.md)
-  - [Plans](./doc/plans.md)
 
 - [Example Workflow](#example-workflow)
 

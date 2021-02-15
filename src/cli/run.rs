@@ -23,6 +23,7 @@ pub fn run() -> Result<()> {
     let strategy = Xdg::new(strat_args)?;
     let data_dir = strategy.data_dir();
     let config_dir = strategy.config_dir();
+    let home_dir = etcetera::home_dir()?;
 
     let out = Box::new(std::io::stdout());
     let err = Box::new(std::io::stderr());
@@ -43,6 +44,7 @@ pub fn run() -> Result<()> {
     let mut context = Context::new(
         data_dir,
         config_dir,
+        home_dir,
         filter_options,
         opts.path.as_deref(),
         opts.file.as_deref(),
@@ -86,6 +88,7 @@ pub fn match_subcommmand(
         Some(SubCommand::Config(cmd)) => {
             context.set_config(&cmd.values, cmd.global, output);
         }
+        Some(SubCommand::Move(cmd)) => context.move_saucefile(output, &cmd.destination, cmd.copy),
         Some(SubCommand::New) => context.create_saucefile(output),
         Some(SubCommand::Set(cmd)) => match &cmd.kind {
             SetKinds::Env(env) => context.set_var(&get_input(&env.values), output),

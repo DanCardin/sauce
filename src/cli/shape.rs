@@ -1,6 +1,6 @@
 use crate::shell::{ColorStrategy, ShellName};
 use clap::Clap;
-use std::io::Write;
+use std::{io::Write, path::PathBuf};
 
 /// Sauce!
 #[derive(Clap, Debug)]
@@ -77,34 +77,38 @@ impl CliOptions {
 
 #[derive(Clap, Debug)]
 pub enum SubCommand {
-    Shell(ShellCommand),
-    Set(SetCommand),
-    Config(ConfigCommand),
-    New,
-    Edit,
-    Show(ShowCommand),
     Clear,
+    Config(ConfigCommand),
+    Edit,
+    Move(MoveCommand),
+    New,
+    Set(SetCommand),
+    Shell(ShellCommand),
+    Show(ShowCommand),
 }
 
-/// Adds to the sauce file
 #[derive(Clap, Debug)]
-pub struct ShellCommand {
-    #[clap(subcommand)]
-    pub kind: ShellKinds,
+pub struct ConfigCommand {
+    #[clap(long, short)]
+    pub global: bool,
+
+    #[clap(parse(try_from_str = crate::cli::utilities::parse_key_val))]
+    pub values: Vec<(String, String)>,
 }
 
+// Moves the targeted saucefile (current directory by default) to the location
+// given by `destination`.
 #[derive(Clap, Debug)]
-pub enum ShellKinds {
-    Init,
-    Exec(ExecCommand),
-}
-
-/// Sets to the sauce file
-#[derive(Clap, Debug)]
-pub struct ExecCommand {
-    /// The command to run
+pub struct MoveCommand {
+    // The destination location to which a `sauce` invocation would point.
+    // That is, not the destination saucefile location.
     #[clap()]
-    pub command: String,
+    pub destination: PathBuf,
+
+    // Instead of removing the files at the source location, leave the original
+    // file untouched.
+    #[clap(short, long)]
+    pub copy: bool,
 }
 
 /// Sets to the sauce file
@@ -135,15 +139,26 @@ pub struct KeyValuePair {
     pub value: String,
 }
 
+/// Adds to the sauce file
 #[derive(Clap, Debug)]
-pub struct ConfigCommand {
-    #[clap(long, short)]
-    pub global: bool,
-
-    #[clap(parse(try_from_str = crate::cli::utilities::parse_key_val))]
-    pub values: Vec<(String, String)>,
+pub struct ShellCommand {
+    #[clap(subcommand)]
+    pub kind: ShellKinds,
 }
 
+#[derive(Clap, Debug)]
+pub enum ShellKinds {
+    Init,
+    Exec(ExecCommand),
+}
+
+/// Sets to the sauce file
+#[derive(Clap, Debug)]
+pub struct ExecCommand {
+    /// The command to run
+    #[clap()]
+    pub command: String,
+}
 /// Display the given category of key-value pairs
 #[derive(Clap, Debug)]
 pub struct ShowCommand {
