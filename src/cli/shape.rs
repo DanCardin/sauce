@@ -77,13 +77,28 @@ impl CliOptions {
 
 #[derive(Clap, Debug)]
 pub enum SubCommand {
+    /// Clears the shell of values sauce tracks
     Clear,
+
+    /// Sets local/global configuration options
     Config(ConfigCommand),
+
+    /// Opens the saucefile with your $EDITOR
     Edit,
+
+    /// Moves the targeted saucefile to the location given by `destination`.
     Move(MoveCommand),
+
+    /// Creates a new saucefile for the targeted location
     New,
+
+    /// Sets target values for the targeted location
     Set(SetCommand),
+
+    /// Group of shell related subcommands
     Shell(ShellCommand),
+
+    /// Display the given category of key-value pairs
     Show(ShowCommand),
 }
 
@@ -96,22 +111,19 @@ pub struct ConfigCommand {
     pub values: Vec<(String, String)>,
 }
 
-// Moves the targeted saucefile (current directory by default) to the location
-// given by `destination`.
 #[derive(Clap, Debug)]
 pub struct MoveCommand {
-    // The destination location to which a `sauce` invocation would point.
-    // That is, not the destination saucefile location.
+    /// The destination location to which a `sauce` invocation would point.
+    /// That is, not the destination saucefile location.
     #[clap()]
     pub destination: PathBuf,
 
-    // Instead of removing the files at the source location, leave the original
-    // file untouched.
+    /// Instead of removing the files at the source location, leave the original
+    /// file untouched.
     #[clap(short, long)]
     pub copy: bool,
 }
 
-/// Sets to the sauce file
 #[derive(Clap, Debug)]
 pub struct SetCommand {
     #[clap(subcommand)]
@@ -139,7 +151,6 @@ pub struct KeyValuePair {
     pub value: String,
 }
 
-/// Adds to the sauce file
 #[derive(Clap, Debug)]
 pub struct ShellCommand {
     #[clap(subcommand)]
@@ -148,18 +159,19 @@ pub struct ShellCommand {
 
 #[derive(Clap, Debug)]
 pub enum ShellKinds {
+    /// The intialization shell hook for getting sauce functionality
     Init,
+
+    /// Executes a command inside a subshell which has had `sauce` invoked already
     Exec(ExecCommand),
 }
 
-/// Sets to the sauce file
 #[derive(Clap, Debug)]
 pub struct ExecCommand {
-    /// The command to run
     #[clap()]
     pub command: String,
 }
-/// Display the given category of key-value pairs
+
 #[derive(Clap, Debug)]
 pub struct ShowCommand {
     #[clap(subcommand)]

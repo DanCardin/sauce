@@ -3,6 +3,7 @@
 ## Overview
 
 - [unreleased](#unreleased)
+- [`0.6.5`](#065) – _2021.02.15_
 - [`0.6.4`](#064) – _2021.02.12_
 - [`0.6.3`](#063) – _2021.02.09_
 - [`0.6.2`](#062) – _2021.02.06_
@@ -19,6 +20,21 @@
 ## _[Unreleased]_
 
 _nothing new to show for… yet!_
+
+## [0.6.5]
+
+_2021.02.15_
+
+### Contributors
+
+
+- Dan Cardin (<ddcardin@gmail.com>)
+
+### Changes
+
+#### Documentation
+
+- **Update cli help text.** ([`56ba5e1`])
 
 ## [0.6.4]
 
@@ -179,7 +195,8 @@ _2021.01.12_
 
 - **Switch to snailquote to properly handle double-quoting multiline strings.** ([`939a67b`])
 
-[unreleased]: https://github.com/DanCardin/sauce/compare/v0.6.4...HEAD
+[unreleased]: https://github.com/DanCardin/sauce/compare/v0.6.5...HEAD
+[0.6.5]: https://github.com/DanCardin/sauce/releases/tag/v0.6.5
 [0.6.4]: https://github.com/DanCardin/sauce/releases/tag/v0.6.4
 [0.6.3]: https://github.com/DanCardin/sauce/releases/tag/v0.6.3
 [0.6.2]: https://github.com/DanCardin/sauce/releases/tag/v0.6.2
@@ -194,6 +211,7 @@ _2021.01.12_
 [0.1.2]: https://github.com/DanCardin/sauce/releases/tag/v0.1.2
 
 
+[`56ba5e1`]: https://github.com/DanCardin/sauce/commit/56ba5e1efa8c62864f6ab669171866aedf20ccf2
 [`fb9dd38`]: https://github.com/DanCardin/sauce/commit/fb9dd38c23d126801b63d5e193020564f6487a3d
 [`f8b21d7`]: https://github.com/DanCardin/sauce/commit/f8b21d7b9500aab40a125839686593b35fc4dd13
 [`2511e3c`]: https://github.com/DanCardin/sauce/commit/2511e3ccf4eed9bc73e7a7f8c275aaaa23c14116
