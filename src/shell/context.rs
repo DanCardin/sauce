@@ -1,11 +1,13 @@
+use ansi_term::ANSIString;
 use anyhow::Result;
+use itertools::Itertools;
 use path_absolutize::Absolutize;
 use std::path::PathBuf;
 use std::{env, path::Path};
 use toml_edit::Item;
 
 use crate::{
-    colors::RED,
+    colors::{BLUE, RED, YELLOW},
     filter::FilterOptions,
     output::{ErrorCode, Output},
     saucefile::Saucefile,
@@ -179,14 +181,24 @@ impl<'a> Context<'a> {
     pub fn execute(&mut self, shell_kind: &dyn Shell, autoload: bool, output: &mut Output) {
         self.load_saucefile(output);
         self.load_settings(output);
-        actions::execute(
+
+        let saucefile = self.saucefile();
+        let sauced = actions::execute(
             output,
             shell_kind,
-            self.saucefile(),
+            saucefile,
             self.settings(),
             &self.filter_options,
             autoload,
         );
+
+        if !sauced {
+            // We may sometimes opt to *not* execute, i.e. certain autoload scenarios.
+            return;
+        }
+
+        let message = materialize_path_message("Sauced", &self.data_dir, saucefile.paths());
+        output.notify(&message);
     }
 
     pub fn cascade_paths(&self) -> impl Iterator<Item = PathBuf> {
@@ -260,6 +272,34 @@ impl<'a> Context<'a> {
             settings.set_values(&values, output);
         };
     }
+}
+
+fn materialize_path_message<'a>(
+    action: &'a str,
+    data_dir: &'a Path,
+    paths: impl Iterator<Item = &'a PathBuf>,
+) -> Vec<ANSIString<'a>> {
+    let parent_dir = &data_dir.parent().unwrap_or(data_dir);
+    let paths = paths
+        .filter_map(|p| p.strip_prefix(parent_dir).ok())
+        .map(|p| p.to_string_lossy())
+        .join(", ");
+
+    let mut result = Vec::new();
+
+    if paths.is_empty() {
+        result.push(RED.bold().paint("No saucefiles exist"));
+        return result;
+    }
+
+    result.push(BLUE.bold().paint(format!("{} ", action)));
+    result.push(YELLOW.paint(paths.clone()));
+
+    if !paths.starts_with(data_dir.to_string_lossy().as_ref()) {
+        result.push(BLUE.bold().paint(" from "));
+        result.push(YELLOW.paint(data_dir.to_string_lossy()));
+    }
+    result
 }
 
 impl<'a> Default for Context<'a> {

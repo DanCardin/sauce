@@ -9,8 +9,8 @@ use toml_edit::{Document, Item, Value};
 
 #[derive(Debug)]
 pub struct Saucefile {
-    pub path: PathBuf,
-    pub ancestors: Vec<Document>,
+    pub path: Option<PathBuf>,
+    pub ancestors: Vec<(PathBuf, Document)>,
     pub document: Document,
 }
 
@@ -20,7 +20,11 @@ impl Saucefile {
         T: IntoIterator<Item = PathBuf>,
     {
         let mut base_sf = Self {
-            path: path.to_path_buf(),
+            path: if path.is_file() {
+                Some(path.to_path_buf())
+            } else {
+                None
+            },
             ..Default::default()
         };
 
@@ -33,7 +37,7 @@ impl Saucefile {
             let document = get_document(&path, output);
 
             if paths.peek().is_some() {
-                base_sf.ancestors.push(document)
+                base_sf.ancestors.push((path, document));
             } else {
                 base_sf.document = document;
             }
@@ -42,17 +46,36 @@ impl Saucefile {
     }
 
     pub fn settings(&self) -> Settings {
-        Settings::from_document(self.path.clone(), &self.document)
+        if let Some(path) = &self.path {
+            Settings::from_document(path.clone(), &self.document)
+        } else {
+            Settings::default()
+        }
+    }
+
+    fn ancestors(&self) -> impl Iterator<Item = (&PathBuf, &Document)> {
+        let ancestors = self.ancestors.iter().map(|(p, d)| (p, d));
+
+        let mut tail = Vec::new();
+        if let Some(path) = &self.path {
+            tail.push((path, &self.document));
+        }
+        ancestors.chain(tail)
+    }
+
+    pub fn paths(&self) -> impl Iterator<Item = &PathBuf> {
+        self.ancestors().map(|(p, _)| p)
+    }
+
+    fn documents(&self) -> impl Iterator<Item = &Document> {
+        self.ancestors().map(|(_, d)| d)
     }
 
     fn section(&self, sections: &[&str], filter_options: &FilterOptions) -> Vec<(&str, String)> {
         let tag = filter_options.as_.unwrap_or("default");
 
-        let documents = self.ancestors.iter().chain(vec![&self.document]);
-
-        iproduct!(documents, sections)
-            .map(|(document, section)| document[section].as_table())
-            .filter_map(|x| x)
+        iproduct!(self.documents(), sections)
+            .filter_map(|(document, section)| document[section].as_table())
             .flat_map(|vars| vars.iter())
             .filter(|(key, _)| {
                 filter_options.glob_match(sections, key)
@@ -97,7 +120,7 @@ impl Saucefile {
 impl Default for Saucefile {
     fn default() -> Self {
         Self {
-            path: PathBuf::new(),
+            path: Some(PathBuf::new()),
             document: Document::new(),
             ancestors: Vec::new(),
         }
