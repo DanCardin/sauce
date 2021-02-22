@@ -15,4 +15,4 @@ format:
 	cargo fmt
 
 changelog:
-	jilu | sponge CHANGELOG.md
+	convco changelog > CHANGELOG.md

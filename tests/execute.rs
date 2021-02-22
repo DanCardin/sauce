@@ -17,10 +17,7 @@ fn it_works_when_no_saucefile_exists() {
     let shell_kind = Zsh {};
     context.execute(&shell_kind, false, &mut output);
     assert_eq!(out.value(), "");
-    assert_eq!(
-        err.value(),
-        format!("Sourced {}\n", context.sauce_path.to_string_lossy())
-    );
+    assert_eq!(err.value(), format!("No saucefiles exist\n"));
 }
 
 #[test]
@@ -45,7 +42,7 @@ function meow {
     );
     assert_eq!(
         err.value(),
-        format!("Sourced {}\n", context.sauce_path.to_string_lossy())
+        format!("Sauced {}\n", context.sauce_path.to_string_lossy())
     );
 }
 
@@ -76,7 +73,7 @@ fn it_loads_with_autoload_flag_when_autoload_is_enabled() {
     context.execute(&shell_kind, true, &mut output);
     assert_eq!(
         err.value(),
-        format!("Sourced {}\n", context.sauce_path.to_string_lossy())
+        format!("Sauced {}\n", context.sauce_path.to_string_lossy())
     );
 }
 

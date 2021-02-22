@@ -175,7 +175,7 @@ pub fn execute(
     global_settings: &Settings,
     filter_options: &FilterOptions,
     autoload_flag: bool,
-) {
+) -> bool {
     // The `autoload_flag` indicates that the "context" of the execution is happening during
     // an autoload, i.e. `cd`. It's the precondition for whether we need to check the settings to
     // see whether we **actually** should perform the autoload, or exit early.
@@ -185,7 +185,7 @@ pub fn execute(
             .resolve_precedence(&global_settings)
             .autoload
     {
-        return;
+        return false;
     }
 
     output.output(render_items(saucefile.vars(&filter_options), |k, v| {
@@ -198,11 +198,7 @@ pub fn execute(
         saucefile.functions(&filter_options),
         |k, v| shell.set_function(k, v),
     ));
-
-    output.notify(&[
-        BLUE.bold().paint("Sourced "),
-        YELLOW.paint(saucefile.path.to_string_lossy()),
-    ]);
+    true
 }
 
 fn render_items<F>(items: Vec<(&str, String)>, mut format_row: F) -> String
@@ -410,7 +406,7 @@ mod tests {
         #[test]
         fn it_executes() {
             let shell = TestShell {};
-            let (out, err, mut output) = setup();
+            let (out, _, mut output) = setup();
             let mut saucefile = Saucefile::default();
 
             let section = ensure_section(&mut saucefile.document, "environment");
@@ -435,7 +431,6 @@ mod tests {
                 out.value(),
                 "export var=varvalue;\n\nalias alias=aliasvalue;\n\nfunction fn=fnvalue;\n\n"
             );
-            assert_eq!(err.value(), "Sourced \n");
         }
 
         #[test]
