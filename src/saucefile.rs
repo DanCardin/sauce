@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use itertools::iproduct;
 
 use crate::toml::get_document;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use toml_edit::{Document, Item, Value};
 
 #[derive(Debug)]
@@ -15,10 +15,22 @@ pub struct Saucefile {
 }
 
 impl Saucefile {
-    pub fn read<T>(output: &mut Output, ancestors: T) -> Self
+    pub fn read(path: &Path) -> Self {
+        Self {
+            path: if path.is_file() {
+                Some(path.to_path_buf())
+            } else {
+                None
+            },
+            ..Default::default()
+        }
+    }
+
+    pub fn read_with_ancestors<T>(output: &mut Output, path: &Path, ancestors: T) -> Self
     where
         T: IntoIterator<Item = PathBuf>,
     {
+        let mut base_sf = Self::read(path);
         let mut paths = ancestors.into_iter().peekable();
 
         let mut base_sf = Self::default();
@@ -99,6 +111,28 @@ impl Saucefile {
             .collect()
     }
 
+    fn item_in_section(&self, section: &str, tag: &str) -> Vec<String> {
+        self.documents()
+            .filter_map(|document| document[section].as_table())
+            .flat_map(|vars| vars.iter())
+            .filter(|(key, _)| *key == tag)
+            .map(|(_, item)| match item {
+                Item::Value(value) => match value {
+                    Value::InlineTable(table) => match table.get(&tag) {
+                        Some(value) => unwrap_toml_value(value),
+                        _ => "".to_string(),
+                    },
+                    _ => unwrap_toml_value(value),
+                },
+                Item::Table(table) => match &table[&tag] {
+                    Item::Value(value) => unwrap_toml_value(value),
+                    _ => "".to_string(),
+                },
+                _ => "".to_string(),
+            })
+            .collect()
+    }
+
     pub fn vars(&self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
         self.section(&["env", "environment"], filter_options)
     }
@@ -109,6 +143,14 @@ impl Saucefile {
 
     pub fn functions(&self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
         self.section(&["function"], filter_options)
+    }
+
+    pub fn on_enter(&self) -> Vec<String> {
+        self.item_in_section("on", "enter")
+    }
+
+    pub fn on_exit(&self) -> Vec<String> {
+        self.item_in_section("on", "exit")
     }
 }
 

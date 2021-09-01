@@ -25,7 +25,7 @@ fn it_works_when_no_saucefile_exists() {
     let mut context = Context::default();
     context.with_sauce_path(Path::new("does_not_exist.toml").to_path_buf());
     let shell_kind = Zsh {};
-    context.execute(&shell_kind, false, &mut output);
+    context.execute(&shell_kind, false, None, &mut output);
     assert_eq!(out.value(), "");
     assert_eq!(err.value(), format!("No saucefiles exist\n"));
 }
@@ -67,7 +67,7 @@ fn it_no_ops_with_autoload_flag_when_autoload_is_disabled() {
     let mut context = Context::default();
     context.with_sauce_path(mkpath("./tests/execute_it_runs.toml"));
     let shell_kind = Zsh {};
-    context.execute(&shell_kind, true, &mut output);
+    context.execute(&shell_kind, true, None, &mut output);
     assert_eq!(out.value(), "");
     assert_eq!(err.value(), "");
 }
@@ -85,7 +85,7 @@ fn it_loads_with_autoload_flag_when_autoload_is_enabled() {
     });
 
     let shell_kind = Zsh {};
-    context.execute(&shell_kind, true, &mut output);
+    context.execute(&shell_kind, true, None, &mut output);
     assert_eq!(
         err.value()
             .starts_with("Sauced tests/execute_it_runs.toml from"),
@@ -102,7 +102,7 @@ fn it_obeys_quiet() {
     output.set_quiet(true);
 
     let shell_kind = Zsh {};
-    context.execute(&shell_kind, true, &mut output);
+    context.execute(&shell_kind, true, None, &mut output);
     assert_eq!(err.value(), "");
 }
 
@@ -116,7 +116,7 @@ fn it_obeys_verbose() {
     output.set_verbose(true);
 
     let shell_kind = Zsh {};
-    context.execute(&shell_kind, false, &mut output);
+    context.execute(&shell_kind, false, None, &mut output);
     assert_eq!(out.value(), err.value());
     assert_eq!(out.value().contains("export TEST"), true);
 }

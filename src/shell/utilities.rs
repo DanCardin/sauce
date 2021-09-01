@@ -63,6 +63,7 @@ pub fn unescape_newline(s: &str) -> String {
             Some('n') => s.push('\n'),
             Some(c) => {
                 s.push('\\');
+                s.push('\\');
                 s.push(c);
             }
             _ => break,

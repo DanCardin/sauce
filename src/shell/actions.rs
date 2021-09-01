@@ -168,36 +168,55 @@ pub fn show(
     output.notify_str(&table);
 }
 
-pub fn execute(
+pub fn autoload(
     output: &mut Output,
-    shell: &dyn Shell,
-    saucefile: &Saucefile,
     global_settings: &Settings,
-    filter_options: &FilterOptions,
-    autoload_flag: bool,
+    prev_saucefile: Option<&Saucefile>,
+    saucefile: Option<&Saucefile>,
 ) -> bool {
-    // The `autoload_flag` indicates that the "context" of the execution is happening during
-    // an autoload, i.e. `cd`. It's the precondition for whether we need to check the settings to
-    // see whether we **actually** should perform the autoload, or exit early.
-    if autoload_flag
-        && !saucefile
+    // However if we proceed, execute on-* hooks, depending on the context of the autoload
+    // event.
+    if let Some(prev_saucefile) = prev_saucefile {
+        if prev_saucefile
+            .settings()
+            .resolve_precedence(&global_settings)
+            .autoload
+        {
+            output.output(prev_saucefile.on_exit().join("\n"));
+        }
+    }
+
+    if let Some(saucefile) = saucefile {
+        // Thus if autoload is disabled at any settings level of specificity, we need to no-op.
+        if !saucefile
             .settings()
             .resolve_precedence(global_settings)
             .autoload
-    {
-        return false;
-    }
+        {
+            return false;
+        }
 
-    output.output(render_items(saucefile.vars(filter_options), |k, v| {
+        output.output(saucefile.on_enter().join("\n"));
+    }
+    true
+}
+
+pub fn execute(
+    output: &mut Output,
+    shell: &dyn Shell,
+    filter_options: &FilterOptions,
+    saucefile: &Saucefile,
+) {
+    output.output(render_items(saucefile.vars(&filter_options), |k, v| {
         shell.set_var(k, v)
     }));
     output.output(render_items(saucefile.aliases(filter_options), |k, v| {
         shell.set_alias(k, v)
     }));
-    output.output(render_items(saucefile.functions(filter_options), |k, v| {
-        shell.set_function(k, v)
-    }));
-    true
+    output.output(render_items(
+        saucefile.functions(&filter_options),
+        |k, v| shell.set_function(k, v),
+    ));
 }
 
 fn render_items<F>(items: Vec<(&str, String)>, mut format_row: F) -> String
@@ -417,14 +436,7 @@ mod tests {
             let section = ensure_section(&mut saucefile.document, "function");
             section["fn"] = value_from_string("fnvalue");
 
-            execute(
-                &mut output,
-                &shell,
-                &saucefile,
-                &Settings::default(),
-                &FilterOptions::default(),
-                false,
-            );
+            execute(&mut output, &shell, &FilterOptions::default(), &saucefile);
 
             assert_eq!(
                 out.value(),
@@ -440,10 +452,8 @@ mod tests {
             execute(
                 &mut output,
                 &shell,
-                &Saucefile::default(),
-                &Settings::default(),
                 &FilterOptions::default(),
-                true,
+                &Saucefile::default(),
             );
 
             assert_eq!(out.value(), "");

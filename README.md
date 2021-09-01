@@ -12,11 +12,9 @@
 </a><br>
 </p>
 
-> The central truth is the central truth, and nothing that I care about
-> is relative
+> The central truth is the central truth, and nothing that I care about is relative
 
-A tool to help manage context/project specific shell-things like
-environment variables.
+A tool to help manage context/project specific shell-things like environment variables.
 
 ## Table of Contents
 
@@ -24,8 +22,7 @@ environment variables.
 
   - [Configuration Reference](./doc/config.md)
   - [Flag and Subcommand Reference](./doc/options.md)
-  - [Comparison to other tools
-    (i.e. direnv/dotenv)](./doc/comparison.md)
+  - [Comparison to other tools (i.e. direnv/dotenv)](./doc/comparison.md)
 
 - [Example Workflow](#example-workflow)
 
@@ -89,27 +86,24 @@ foo=bar
 
 #### Download Release
 
-- Download Linux/Mac binary from
-  [Releases](https://github.com/DanCardin/sauce/releases)
+- Download Linux/Mac binary from [Releases](https://github.com/DanCardin/sauce/releases)
 
 ### Shell Hook
 
-Currently explicitly supported shells include: `zsh`, `bash`, and
-`fish`. The scaffolding exists to support other shells, which should
-make supporting other common shells that might require `"$SHELL"`
+Currently explicitly supported shells include: `zsh`, `bash`, and `fish`. The scaffolding exists to
+support other shells, which should make supporting other common shells that might require `"$SHELL"`
 specific behavior.
 
-Loading things into the environment requires a minimal amount of shell
-code to be executed, so after installing the binary (suggestion below),
-you will need to add add a hook to your bashrc/zshrc/config.fish, etc.
+Loading things into the environment requires a minimal amount of shell code to be executed, so after
+installing the binary (suggestion below), you will need to add add a hook to your
+bashrc/zshrc/config.fish, etc.
 
 - bash `eval "$(sauce --shell bash shell init)"`
 - zsh `eval "$(sauce --shell zsh shell init)"`
 - fish `sauce --shell fish shell init | source`
 
-Depending on the level of similarity to the above shells, you may be
-able to get away with using one of the above `shell init` hooks until
-explicit support is added
+Depending on the level of similarity to the above shells, you may be able to get away with using one
+of the above `shell init` hooks until explicit support is added
 
 ## Targets
 
@@ -135,81 +129,101 @@ Currently supported targets include:
   sauce set function add 'echo $(expr $1 + $2)'
   ```
 
+## Events
+
+### Autoloading
+
+See the [Configuration Reference](./doc/config.md) on `autoload-hook` and `autoload`.
+
+Essentially, `sauce` can automatically load `sauce` upon entering a directory, configurable per
+directory or globally.
+
+### On-enter
+
+Execute arbitrary shell commands upon entering a directory.
+
+``` toml
+[on]
+enter = """
+echo 'hello!'
+"""
+```
+
+In particular, this feature enables easier conversion from alternatives like `direnv`. You can
+generally copy the contents of your `.envrc` to this section of your saucefile.
+
+Obviously, direnv has a more sophisticated sytstem of setting/unsetting context, as well as the
+ability to source global direnv shell content for directives; so it's not a 100% parity. However my
+personal usage of direnv has forever been largely limited to `export`s (which are sauce's bread and
+butter).
+
 ## Features
 
 ### `sauce` command
 
-This is primary usecase is the `sauce` command, no subcommand, no
-arguments. This loads the current shell with all sauce targets (env
-vars, aliases, and function) which apply to the current directory.
+This is primary usecase is the `sauce` command, no subcommand, no arguments. This loads the current
+shell with all sauce targets (env vars, aliases, and function) which apply to the current directory.
 
-There are also a bunch of [options](./doc/options.md) to allow you to
-customize the behavior of `sauce`, for example `sauce --glob DATABASE*`,
-`sauce --filter env:AWS_PROFILE`, or `sauce --path ~`.
+There are also a bunch of [options](./doc/options.md) to allow you to customize the behavior of
+`sauce`, for example `sauce --glob DATABASE*`, `sauce --filter env:AWS_PROFILE`, or
+`sauce --path ~`.
 
 ### Central Storage
 
-The original motivation for central storage was due to getting a new
-computer and needing to comb through \~50 repos to find all the random
-`.env` files and gitignored notes and whatnot littered all over the
-place to make sure nothing got left behind.
+The original motivation for central storage was due to getting a new computer and needing to comb
+through \~50 repos to find all the random `.env` files and gitignored notes and whatnot littered all
+over the place to make sure nothing got left behind.
 
-However just generally, colocating the sauce data with the actual folder
-introduces a number of technical, security, and usability issues that
-are circumvented through central storage.
+However just generally, colocating the sauce data with the actual folder introduces a number of
+technical, security, and usability issues that are circumvented through central storage.
 
 ### Cascaded loading
 
-A key feature of `sauce` is that values are loaded in a cascading
-fashion relative to the home directory.
+A key feature of `sauce` is that values are loaded in a cascading fashion relative to the home
+directory.
 
-This makes it easier to compose targets (env vars, aliases, and shell
-functions) among various locations, likely by utilizing the natural
-directory structure you might already have.
+This makes it easier to compose targets (env vars, aliases, and shell functions) among various
+locations, likely by utilizing the natural directory structure you might already have.
 
 Given a directory structure
 
-    ~/
-      work/
-        project/
-          repo/
-          repo2/
-            src/
-        otherproject/
+``` text
+~/
+  work/
+    project/
+      repo/
+      repo2/
+        src/
+    otherproject/
+```
 
-Support you run `sauce` at any folder level/depth, say
-`~/work/project/repo/`. The values saved for the folders: `~`, `~/work`,
-`~/work/project`, and `~/work/project/repo` will all be loaded.
+Support you run `sauce` at any folder level/depth, say `~/work/project/repo/`. The values saved for
+the folders: `~`, `~/work`, `~/work/project`, and `~/work/project/repo` will all be loaded.
 
-The more specific/deep folder’s values will take precedence over the
-values of more general/shallow folders.
+The more specific/deep folder’s values will take precedence over the values of more general/shallow
+folders.
 
-All saucefiles are located in the `$XDG_DATA_HOME/sauce` folder, after
-which the folder structure mirrors that of the folders who’s values are
-being tracked. Given the above example, if every folder had a saucefile,
-you might see:
+All saucefiles are located in the `$XDG_DATA_HOME/sauce` folder, after which the folder structure
+mirrors that of the folders who’s values are being tracked. Given the above example, if every folder
+had a saucefile, you might see:
 
-    ~/.local/share/
-      sauce.toml
-      sauce/
-        project.toml
-        project/
-          repo.toml
-          repo2.toml
-          repo2/
-            src.toml
-        otherproject.toml
-
-### Autoloading
-
-See the [Configuration Reference](./doc/config.md) on `autoload-hook`
-and `autoload`.
+``` text
+~/.local/share/
+  sauce.toml
+  sauce/
+    project.toml
+    project/
+      repo.toml
+      repo2.toml
+      repo2/
+        src.toml
+    otherproject.toml
+```
 
 ## Local development
 
-For local development, it can be useful to enable the `--feature dev`.
-This alters the behavior so that the shell hook(s) point to the absolute
-location of the debug build.
+For local development, it can be useful to enable the `--feature dev`. This alters the behavior so
+that the shell hook(s) point to the absolute location of the debug build.
 
 An example alias that might be helpful could be:
 
@@ -218,6 +232,5 @@ An example alias that might be helpful could be:
 build = 'cargo build --features dev && eval "$(./target/debug/sauce shell init)"'
 ```
 
-At which point, you’re a quick `build` away from being able to `cd`
-around to test `sauce`, while always pointing at your project version of
-`sauce` for the current shell.
+At which point, you’re a quick `build` away from being able to `cd` around to test `sauce`, while
+always pointing at your project version of `sauce` for the current shell.

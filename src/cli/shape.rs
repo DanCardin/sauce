@@ -1,5 +1,5 @@
 use crate::shell::{ColorStrategy, ShellName};
-use clap::Clap;
+use clap::{ArgSettings, Clap};
 use std::{io::Write, path::PathBuf};
 
 /// Sauce!
@@ -12,8 +12,8 @@ pub struct CliOptions {
     pub shell: ShellName,
 
     /// Supplied during autoload sequence. Not generally useful to end-users.
-    #[clap(long)]
-    pub autoload: bool,
+    #[clap(long, setting = ArgSettings::Hidden)]
+    pub autoload: Option<PathBuf>,
 
     /// For typical commands such as `sauce` and `sauce clear` this outputs the exact
     /// shell output that would have executed. For mutating commands like `sauce config`

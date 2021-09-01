@@ -1,5 +1,5 @@
 function _{0}_autoload {{
-  {0} --autoload
+  {0} --autoload --autoload-previous "$OLDPWD"
 }}
 
 function _{0}_autoload_precmd {{

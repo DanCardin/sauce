@@ -1,5 +1,7 @@
 use ansi_term::ANSIString;
 use anyhow::Result;
+use core::iter::FromIterator;
+use indexmap::IndexSet;
 use itertools::Itertools;
 use path_absolutize::Absolutize;
 use std::path::Path;
@@ -16,6 +18,32 @@ use crate::{
     target::Target,
     toml::value_from_string,
 };
+
+// ~/ to ~/foo/bar:
+//  - on-exit: n/a
+//  - on-enter: ~/foo, ~/foo/bar
+//
+// ~/meow/bar to ~/foo/bar:
+//  - on-exit: ~/meow/bar, ~/meow
+//  - on-enter: ~/foo, ~/foo/bar
+//
+// ~/foo to ~/foo/bar:
+//  - on-exit: n/a
+//  - on-enter: ~/foo/bar
+//
+// ~/foo/bar to ~/:
+//  - on-exit: ~/foo/bar, ~/foo
+//  - on-enter: n/a
+fn diff_paths<T>(corpus: &corpus::Corpus, from_paths: T, to_paths: T) -> Vec<PathBuf>
+where
+    T: IntoIterator<Item = PathBuf>,
+{
+    let from_paths_set: IndexSet<PathBuf> = IndexSet::from_iter(from_paths);
+    let to_paths_set: IndexSet<PathBuf> = IndexSet::from_iter(to_paths);
+
+    let difference = to_paths_set.difference(&from_paths_set);
+    difference.into_iter().map(|x| x.clone()).collect()
+}
 
 #[derive(Debug)]
 pub struct Context<'a> {
@@ -72,7 +100,11 @@ impl<'a> Context<'a> {
 
     fn load_saucefile(&mut self, output: &mut Output) {
         if self._saucefile.is_none() {
-            self._saucefile = Some(Saucefile::read(output, self.cascade_paths()));
+            self._saucefile = Some(Saucefile::read_with_ancestors(
+                output,
+                &self.sauce_path(),
+                self.cascade_paths(self.path.as_path()),
+            ));
         }
     }
 
@@ -179,39 +211,59 @@ impl<'a> Context<'a> {
         );
     }
 
-    pub fn execute(&mut self, shell_kind: &dyn Shell, autoload: bool, output: &mut Output) {
+    pub fn execute(
+        &mut self,
+        shell_kind: &dyn Shell,
+        autoload: Option<&PathBuf>,
+        output: &mut Output,
+    ) {
         self.load_saucefile(output);
         self.load_settings(output);
 
-        let saucefile = self.saucefile();
-        let sauced = actions::execute(
-            output,
-            shell_kind,
-            saucefile,
-            self.settings(),
-            &self.filter_options,
-            autoload,
-        );
+        // The `autoload_flag` indicates that the "context" of the execution is happening during
+        // an autoload, i.e. `cd`. It's the precondition for whether we need to check the settings to
+        // see whether we **actually** should perform the autoload, or exit early.
+        if let Some(previous_location) = autoload {
+            let current_paths = self.cascade_paths(&self.path.as_path());
+            let previous_paths = self.cascade_paths(&previous_location.as_path());
+            let forward_paths = dbg!(diff_paths(&self.corpus, current_paths, previous_paths));
+            let saucefile =
+                Saucefile::read_with_ancestors(output, &self.sauce_path(), forward_paths);
 
-        if !sauced {
-            // We may sometimes opt to *not* execute, i.e. certain autoload scenarios.
-            return;
+            let current_paths = self.cascade_paths(&self.path.as_path());
+            let previous_paths = self.cascade_paths(&previous_location.as_path());
+            let backward_paths = dbg!(diff_paths(&self.corpus, previous_paths, current_paths));
+            let prev_saucefile =
+                Saucefile::read_with_ancestors(output, &self.sauce_path(), backward_paths);
+
+            // let should_continue =
+            //     actions::autoload(output, self.settings(), &prev_saucefile, &saucefile);
+            // if !should_continue {
+            //     return;
+            // }
+        } else {
+            // Saucefile::read_with_ancestors(
+            //     output,
+            //     &self.sauce_path(),
+            //     paths,
+            // ))
         }
 
-        let message =
-            materialize_path_message("Sauced", &self.corpus.root_location, saucefile.paths());
-        output.notify(&message);
+        // let message =
+        //     materialize_path_message("Sauced", &self.corpus.root_location, saucefile.paths());
+        // output.notify(&message);
     }
 
-    pub fn cascade_paths(&self) -> impl Iterator<Item = PathBuf> {
+    pub fn cascade_paths(&self, path: &Path) -> impl Iterator<Item = PathBuf> {
         if let Some(path) = &self._sauce_path {
             vec![path.clone()].into_iter().rev()
         } else {
-            self.corpus
-                .ancestors(self.path.as_path())
+            dbg!(self
+                .corpus
+                .ancestors(path)
                 .collect::<Vec<PathBuf>>()
                 .into_iter()
-                .rev()
+                .rev())
         }
     }
 
@@ -342,7 +394,9 @@ mod tests {
             context.with_corpus(corpus(home.join(".local/share").as_path()));
             context.at_path(&home);
 
-            let paths: Vec<_> = context.cascade_paths().collect();
+            let paths: Vec<_> = context
+                .cascade_paths(&Path::new("~/.local/share/sauce").to_path_buf())
+                .collect();
 
             let expected: Vec<PathBuf> = vec![home.join(".local/share/sauce.toml")];
             assert_eq!(paths, expected);
@@ -356,7 +410,11 @@ mod tests {
             context.with_corpus(corpus(home.join(".local/share").as_path()));
             context.at_path(home.join("meow/meow/kitty"));
 
-            let paths: Vec<_> = context.cascade_paths().collect();
+            let paths: Vec<_> = context
+                .cascade_paths(
+                    &Path::new("~/.local/share/sauce/meow/meow/kitty.toml").to_path_buf(),
+                )
+                .collect();
 
             let expected: Vec<PathBuf> = vec![
                 home.join(".local/share/sauce.toml"),

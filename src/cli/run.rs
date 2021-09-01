@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::filter::FilterOptions;
 use crate::shell::{self, Shell};
 use crate::Context;
@@ -61,7 +63,7 @@ pub fn match_subcommmand(
     output: &mut Output,
     shell_kind: &dyn Shell,
     subcmd: Option<SubCommand>,
-    autoload: bool,
+    autoload: Option<PathBuf>,
 ) {
     match subcmd {
         Some(SubCommand::Shell(cmd)) => {
@@ -91,6 +93,6 @@ pub fn match_subcommmand(
             ShowKinds::Alias => context.show(Target::Alias, output),
         },
         Some(SubCommand::Clear) => context.clear(shell_kind, output),
-        None => context.execute(shell_kind, autoload, output),
+        None => context.execute(shell_kind, autoload.as_ref(), output),
     };
 }
