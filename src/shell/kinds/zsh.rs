@@ -27,7 +27,7 @@ impl Shell for Zsh {
     }
 
     fn set_alias(&self, var: &str, value: &str) -> String {
-        format!("alias {}={}", var, escape(&value))
+        format!("alias {}={}", var, escape(value))
     }
 
     fn set_function(&self, var: &str, value: &str) -> String {

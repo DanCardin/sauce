@@ -80,13 +80,13 @@ impl Saucefile {
             .map(|(key, item)| {
                 let var = match item {
                     Item::Value(value) => match value {
-                        Value::InlineTable(table) => match table.get(&tag) {
+                        Value::InlineTable(table) => match table.get(tag) {
                             Some(value) => unwrap_toml_value(value),
                             _ => "".to_string(),
                         },
                         _ => unwrap_toml_value(value),
                     },
-                    Item::Table(table) => match &table[&tag] {
+                    Item::Table(table) => match &table[tag] {
                         Item::Value(value) => unwrap_toml_value(value),
                         _ => "".to_string(),
                     },

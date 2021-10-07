@@ -89,7 +89,7 @@ pub fn ensure_section<'a>(document: &'a mut Document, section: &str) -> &'a mut 
 }
 
 pub fn value_from_string(raw_value: &str) -> Item {
-    let value = Value::from_str(&raw_value).unwrap_or_else(|_| Value::from(raw_value));
+    let value = Value::from_str(raw_value).unwrap_or_else(|_| Value::from(raw_value));
     toml_edit::value(value)
 }
 

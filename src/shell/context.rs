@@ -263,11 +263,11 @@ impl<'a> Context<'a> {
     ) {
         if global {
             self.load_settings(output);
-            self.settings_mut().set_values(&values, output);
+            self.settings_mut().set_values(values, output);
         } else {
             self.load_saucefile(output);
             let settings = self.saucefile().settings();
-            settings.set_values(&values, output);
+            settings.set_values(values, output);
         };
     }
 }

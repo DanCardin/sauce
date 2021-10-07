@@ -29,7 +29,7 @@ pub fn get_input(values: &[(String, String)]) -> Vec<(String, String)> {
             .expect("Could not read stdin");
 
         if !buffer.is_empty() {
-            if let Some(b) = buffer.strip_suffix("\n") {
+            if let Some(b) = buffer.strip_suffix('\n') {
                 buffer = b.to_string();
             }
 

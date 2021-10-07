@@ -74,7 +74,7 @@ pub fn unescape_newline(s: &str) -> String {
 
 /// Ensure proper quoting of any `value` being output to the containing shell.
 pub fn escape(value: &str) -> String {
-    let shell_value = snailquote::escape(&value).to_string();
+    let shell_value = snailquote::escape(value).to_string();
     unescape_newline(&shell_value)
 }
 
