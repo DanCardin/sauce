@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use itertools::iproduct;
 
 use crate::toml::get_document;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use toml_edit::{Document, Item, Value};
 
 #[derive(Debug)]
@@ -15,20 +15,14 @@ pub struct Saucefile {
 }
 
 impl Saucefile {
-    pub fn read<T>(output: &mut Output, path: &Path, ancestors: T) -> Self
+    pub fn read<T>(output: &mut Output, ancestors: T) -> Self
     where
         T: IntoIterator<Item = PathBuf>,
     {
-        let mut base_sf = Self {
-            path: if path.is_file() {
-                Some(path.to_path_buf())
-            } else {
-                None
-            },
-            ..Default::default()
-        };
-
         let mut paths = ancestors.into_iter().peekable();
+
+        let mut base_sf = Self::default();
+
         while let Some(path) = paths.next() {
             if !path.is_file() {
                 continue;
@@ -40,6 +34,7 @@ impl Saucefile {
                 base_sf.ancestors.push((path, document));
             } else {
                 base_sf.document = document;
+                base_sf.path = Some(path.to_path_buf());
             }
         }
         base_sf

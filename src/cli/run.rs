@@ -4,26 +4,15 @@ use crate::Context;
 use crate::{cli::utilities::get_input, target::Target};
 use crate::{filter::parse_match_option, output::Output};
 use anyhow::Result;
-use etcetera::app_strategy::{AppStrategy, AppStrategyArgs, Xdg};
+use etcetera::base_strategy::{BaseStrategy, Xdg};
 
 use super::shape::{CliOptions, KeyValuePair, SetKinds, ShellKinds, ShowKinds, SubCommand};
 
 pub fn run() -> Result<()> {
     let opts: CliOptions = CliOptions::parse();
 
-    let strat_args = AppStrategyArgs {
-        top_level_domain: "com".to_string(),
-        author: clap::crate_authors!()
-            .split(':')
-            .next()
-            .unwrap_or("")
-            .to_string(),
-        app_name: clap::crate_name!().to_string(),
-    };
-    let strategy = Xdg::new(strat_args)?;
-    let data_dir = strategy.data_dir();
-    let config_dir = strategy.config_dir();
-    let home_dir = etcetera::home_dir()?;
+    let strategy = Xdg::new()?;
+    let config_dir = strategy.config_dir().join("sauce");
 
     let out = Box::new(std::io::stdout());
     let err = Box::new(std::io::stderr());
@@ -42,9 +31,7 @@ pub fn run() -> Result<()> {
     };
 
     let mut context = Context::new(
-        data_dir,
         config_dir,
-        home_dir,
         filter_options,
         opts.path.as_deref(),
         opts.file.as_deref(),
