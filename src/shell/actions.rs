@@ -182,22 +182,21 @@ pub fn execute(
     if autoload_flag
         && !saucefile
             .settings()
-            .resolve_precedence(&global_settings)
+            .resolve_precedence(global_settings)
             .autoload
     {
         return false;
     }
 
-    output.output(render_items(saucefile.vars(&filter_options), |k, v| {
+    output.output(render_items(saucefile.vars(filter_options), |k, v| {
         shell.set_var(k, v)
     }));
-    output.output(render_items(saucefile.aliases(&filter_options), |k, v| {
+    output.output(render_items(saucefile.aliases(filter_options), |k, v| {
         shell.set_alias(k, v)
     }));
-    output.output(render_items(
-        saucefile.functions(&filter_options),
-        |k, v| shell.set_function(k, v),
-    ));
+    output.output(render_items(saucefile.functions(filter_options), |k, v| {
+        shell.set_function(k, v)
+    }));
     true
 }
 

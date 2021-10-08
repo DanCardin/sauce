@@ -2,8 +2,8 @@ use ansi_term::ANSIString;
 use anyhow::Result;
 use itertools::Itertools;
 use path_absolutize::Absolutize;
+use std::path::Path;
 use std::path::PathBuf;
-use std::{env, path::Path};
 use toml_edit::Item;
 
 use crate::{
@@ -21,69 +21,58 @@ use crate::{
 pub struct Context<'a> {
     filter_options: FilterOptions<'a>,
 
-    data_dir: PathBuf,
+    corpus: corpus::Corpus,
     config_dir: PathBuf,
-    home_dir: PathBuf,
-
     path: PathBuf,
-    pub sauce_path: PathBuf,
 
+    _sauce_path: Option<PathBuf>,
     _settings: Option<Settings>,
     _saucefile: Option<Saucefile>,
 }
 
 impl<'a> Context<'a> {
     pub fn new(
-        data_dir: PathBuf,
         config_dir: PathBuf,
-        home_dir: PathBuf,
         filter_options: FilterOptions<'a>,
-        path: Option<&'a str>,
-        file: Option<&'a str>,
+        path: Option<&'a Path>,
+        file: Option<&'a Path>,
     ) -> Result<Self> {
-        let (path, sauce_path, data_dir) = match file {
-            // The default case, where no `file` is supplied. We perform normal
-            // path lookup and saucefile cascading behavior.
-            None => {
-                let path = if let Some(path) = path {
-                    Path::new(path).to_path_buf()
-                } else {
-                    env::current_dir()?
-                };
+        let builder = corpus::builder().relative_to_home()?;
 
-                let path = path.absolutize()?;
+        let corpus = builder
+            .with_root(corpus::RootLocation::XDGData)
+            .with_name("sauce")
+            .with_extension("toml")
+            .build()?;
 
-                let relative_path = path.strip_prefix(&home_dir)?;
-                let sauce_path = data_dir.join(relative_path).with_extension("toml");
-                (path.to_path_buf(), sauce_path, data_dir)
-            }
-            // The default case, where no `file` is supplied. We perform normal
-            // path lookup and saucefile cascading behavior.
-            Some(file) => {
-                let file = Path::new(file).absolutize()?.to_path_buf();
-
-                (file.clone(), file, "".into())
-            }
+        let path = if let Some(p) = path {
+            p.to_path_buf()
+        } else {
+            std::env::current_dir()?
         };
+
         Ok(Self {
-            data_dir,
+            corpus,
             config_dir,
-            home_dir,
             filter_options,
             path,
-            sauce_path,
+            _sauce_path: file.map(|p| p.to_path_buf()),
             _saucefile: None,
             _settings: None,
         })
     }
 
+    fn sauce_path(&self) -> PathBuf {
+        if let Some(path) = &self._sauce_path {
+            path.to_path_buf()
+        } else {
+            self.corpus.path(self.path.as_path())
+        }
+    }
+
     fn load_saucefile(&mut self, output: &mut Output) {
         if self._saucefile.is_none() {
-            self._saucefile = Some(Saucefile::read(
-                output,
-                &self.sauce_path,
-                self.cascade_paths(),
-            ));
+            self._saucefile = Some(Saucefile::read(output, self.cascade_paths()));
         }
     }
 
@@ -95,8 +84,20 @@ impl<'a> Context<'a> {
         self._saucefile.as_mut().unwrap()
     }
 
-    pub fn set_settings(&mut self, settings: Settings) {
+    pub fn with_sauce_path(&mut self, sauce_path: PathBuf) {
+        self._sauce_path = Some(sauce_path);
+    }
+
+    pub fn with_settings(&mut self, settings: Settings) {
         self._settings = Some(settings);
+    }
+
+    pub fn with_corpus(&mut self, corpus: corpus::Corpus) {
+        self.corpus = corpus;
+    }
+
+    pub fn at_path<P: Into<PathBuf>>(&mut self, path: P) {
+        self.path = path.into();
     }
 
     pub fn load_settings(&mut self, output: &mut Output) {
@@ -129,11 +130,11 @@ impl<'a> Context<'a> {
     }
 
     pub fn create_saucefile(&mut self, output: &mut Output) {
-        actions::create_saucefile(output, &self.sauce_path);
+        actions::create_saucefile(output, &self.corpus.path(self.sauce_path().as_path()));
     }
 
     pub fn move_saucefile(&self, output: &mut Output, destination: &Path, copy: bool) {
-        let source = &self.sauce_path;
+        let source = &self.corpus.path(self.sauce_path().as_path());
 
         let destination = match destination.absolutize() {
             Ok(d) => d,
@@ -145,8 +146,8 @@ impl<'a> Context<'a> {
                 return;
             }
         };
-        if let Ok(relative_path) = destination.strip_prefix(&self.home_dir) {
-            let dest = self.data_dir.join(relative_path).with_extension("toml");
+        if let Ok(relative_path) = destination.strip_prefix(&self.corpus.relative_path) {
+            let dest = self.corpus.path(relative_path);
             actions::move_saucefile(output, source, &dest, copy);
         } else {
             output.notify_error(
@@ -157,7 +158,7 @@ impl<'a> Context<'a> {
     }
 
     pub fn edit_saucefile(&mut self, shell_kind: &dyn Shell, output: &mut Output) {
-        actions::edit(output, shell_kind, &self.sauce_path);
+        actions::edit(output, shell_kind, self.sauce_path().as_path());
     }
 
     pub fn show(&mut self, target: Target, output: &mut Output) {
@@ -197,24 +198,21 @@ impl<'a> Context<'a> {
             return;
         }
 
-        let message = materialize_path_message("Sauced", &self.data_dir, saucefile.paths());
+        let message =
+            materialize_path_message("Sauced", &self.corpus.root_location, saucefile.paths());
         output.notify(&message);
     }
 
     pub fn cascade_paths(&self) -> impl Iterator<Item = PathBuf> {
-        self.sauce_path
-            .ancestors()
-            .filter(|p| {
-                if self.data_dir.with_extension("toml") == *p {
-                    true
-                } else {
-                    p.strip_prefix(&self.data_dir).is_ok()
-                }
-            })
-            .map(|p| p.with_extension("toml"))
-            .collect::<Vec<PathBuf>>()
-            .into_iter()
-            .rev()
+        if let Some(path) = &self._sauce_path {
+            vec![path.clone()].into_iter().rev()
+        } else {
+            self.corpus
+                .ancestors(self.path.as_path())
+                .collect::<Vec<PathBuf>>()
+                .into_iter()
+                .rev()
+        }
     }
 
     pub fn set_var<T: AsRef<str>>(&mut self, raw_values: &[(T, T)], output: &mut Output) {
@@ -251,10 +249,10 @@ impl<'a> Context<'a> {
         I: IntoIterator<Item = (T, Item)>,
         T: AsRef<str>,
     {
-        let path = &self.sauce_path.clone();
+        let path = self.sauce_path();
         let document = &mut self.saucefile_mut().document;
 
-        output.write_toml(path, document, section, values);
+        output.write_toml(&path, document, section, values);
     }
 
     pub fn set_config<T: AsRef<str>>(
@@ -265,11 +263,11 @@ impl<'a> Context<'a> {
     ) {
         if global {
             self.load_settings(output);
-            self.settings_mut().set_values(&values, output);
+            self.settings_mut().set_values(values, output);
         } else {
             self.load_saucefile(output);
             let settings = self.saucefile().settings();
-            settings.set_values(&values, output);
+            settings.set_values(values, output);
         };
     }
 }
@@ -279,9 +277,8 @@ fn materialize_path_message<'a>(
     data_dir: &'a Path,
     paths: impl Iterator<Item = &'a PathBuf>,
 ) -> Vec<ANSIString<'a>> {
-    let parent_dir = &data_dir.parent().unwrap_or(data_dir);
     let paths = paths
-        .filter_map(|p| p.strip_prefix(parent_dir).ok())
+        .filter_map(|p| p.strip_prefix(data_dir).ok())
         .map(|p| p.to_string_lossy())
         .join(", ");
 
@@ -306,11 +303,10 @@ impl<'a> Default for Context<'a> {
     fn default() -> Self {
         Self {
             filter_options: FilterOptions::default(),
-            data_dir: PathBuf::new(),
+            corpus: corpus::builder().build().unwrap(),
             config_dir: PathBuf::new(),
-            home_dir: PathBuf::new(),
             path: PathBuf::new(),
-            sauce_path: PathBuf::new(),
+            _sauce_path: None,
             _saucefile: None,
             _settings: None,
         }
@@ -326,31 +322,47 @@ mod tests {
         use super::*;
         use pretty_assertions::assert_eq;
 
+        fn corpus<'a, P: Into<&'a Path>>(root: P) -> corpus::Corpus {
+            let root = root.into();
+            corpus::builder()
+                .relative_to_home()
+                .unwrap()
+                .with_root(root)
+                .with_name("sauce")
+                .with_extension("toml")
+                .build()
+                .unwrap()
+        }
+
         #[test]
         fn test_home() {
+            let home = etcetera::home_dir().unwrap();
+
             let mut context = Context::default();
-            context.data_dir = "~/.local/share/sauce".into();
-            context.sauce_path = "~/.local/share/sauce".into();
+            context.with_corpus(corpus(home.join(".local/share").as_path()));
+            context.at_path(&home);
 
             let paths: Vec<_> = context.cascade_paths().collect();
 
-            let expected: Vec<PathBuf> = vec!["~/.local/share/sauce.toml".into()];
+            let expected: Vec<PathBuf> = vec![home.join(".local/share/sauce.toml")];
             assert_eq!(paths, expected);
         }
 
         #[test]
         fn test_nested_subdir() {
+            let home = etcetera::home_dir().unwrap();
+
             let mut context = Context::default();
-            context.data_dir = "~/.local/share/sauce".into();
-            context.sauce_path = "~/.local/share/sauce/meow/meow/kitty.toml".into();
+            context.with_corpus(corpus(home.join(".local/share").as_path()));
+            context.at_path(home.join("meow/meow/kitty"));
 
             let paths: Vec<_> = context.cascade_paths().collect();
 
             let expected: Vec<PathBuf> = vec![
-                "~/.local/share/sauce.toml".into(),
-                "~/.local/share/sauce/meow.toml".into(),
-                "~/.local/share/sauce/meow/meow.toml".into(),
-                "~/.local/share/sauce/meow/meow/kitty.toml".into(),
+                home.join(".local/share/sauce.toml"),
+                home.join(".local/share/sauce/meow.toml"),
+                home.join(".local/share/sauce/meow/meow.toml"),
+                home.join(".local/share/sauce/meow/meow/kitty.toml"),
             ];
             assert_eq!(paths, expected);
         }

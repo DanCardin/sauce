@@ -36,12 +36,12 @@ pub struct CliOptions {
 
     /// The path which should be sauce'd. Defaults to the current directory.
     #[clap(short, long)]
-    pub path: Option<String>,
+    pub path: Option<PathBuf>,
 
     /// Sets a specific saucefile to load, overriding the default lookup mechanisms and
     /// cascading behavior
     #[clap(long)]
-    pub file: Option<String>,
+    pub file: Option<PathBuf>,
 
     /// Runs the given command "as" the given "as" namespace.
     #[clap(short, long)]

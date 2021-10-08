@@ -8,12 +8,22 @@ use sauce::{
     Context,
 };
 
+fn corpus() -> corpus::Corpus {
+    let current_dir = std::env::current_dir().unwrap();
+    corpus::builder()
+        .relative_to(&current_dir)
+        .with_root(current_dir)
+        .with_extension("toml")
+        .build()
+        .unwrap()
+}
+
 #[test]
 fn it_works_when_no_saucefile_exists() {
     let (out, err, mut output) = setup();
 
     let mut context = Context::default();
-    context.sauce_path = Path::new("does_not_exist.toml").to_path_buf();
+    context.with_sauce_path(Path::new("does_not_exist.toml").to_path_buf());
     let shell_kind = Zsh {};
     context.execute(&shell_kind, false, &mut output);
     assert_eq!(out.value(), "");
@@ -25,9 +35,17 @@ fn it_runs() {
     let (out, err, mut output) = setup();
 
     let mut context = Context::default();
-    context.sauce_path = mkpath("./tests/execute_it_runs.toml");
+    context.with_corpus(corpus());
+    context.at_path("./tests/execute_it_runs");
     let shell_kind = Zsh {};
     context.execute(&shell_kind, false, &mut output);
+
+    assert_eq!(
+        err.value()
+            .starts_with("Sauced tests/execute_it_runs.toml from"),
+        true
+    );
+
     assert_eq!(
         out.value(),
         r#"export TEST=example;
@@ -40,10 +58,6 @@ function meow {
 
 "#
     );
-    assert_eq!(
-        err.value(),
-        format!("Sauced {}\n", context.sauce_path.to_string_lossy())
-    );
 }
 
 #[test]
@@ -51,7 +65,7 @@ fn it_no_ops_with_autoload_flag_when_autoload_is_disabled() {
     let (out, err, mut output) = setup();
 
     let mut context = Context::default();
-    context.sauce_path = mkpath("./tests/execute_it_runs.toml");
+    context.with_sauce_path(mkpath("./tests/execute_it_runs.toml"));
     let shell_kind = Zsh {};
     context.execute(&shell_kind, true, &mut output);
     assert_eq!(out.value(), "");
@@ -63,8 +77,9 @@ fn it_loads_with_autoload_flag_when_autoload_is_enabled() {
     let (_, err, mut output) = setup();
 
     let mut context = Context::default();
-    context.sauce_path = mkpath("./tests/execute_it_runs.toml");
-    context.set_settings(Settings {
+    context.with_corpus(corpus());
+    context.with_sauce_path(mkpath("./tests/execute_it_runs.toml"));
+    context.with_settings(Settings {
         autoload: Some(true),
         ..Default::default()
     });
@@ -72,8 +87,9 @@ fn it_loads_with_autoload_flag_when_autoload_is_enabled() {
     let shell_kind = Zsh {};
     context.execute(&shell_kind, true, &mut output);
     assert_eq!(
-        err.value(),
-        format!("Sauced {}\n", context.sauce_path.to_string_lossy())
+        err.value()
+            .starts_with("Sauced tests/execute_it_runs.toml from"),
+        true
     );
 }
 
@@ -82,7 +98,7 @@ fn it_obeys_quiet() {
     let (_, err, mut output) = setup();
 
     let mut context = Context::default();
-    context.sauce_path = mkpath("./tests/execute_it_runs.toml");
+    context.with_sauce_path(mkpath("./tests/execute_it_runs.toml"));
     output.set_quiet(true);
 
     let shell_kind = Zsh {};
@@ -95,7 +111,7 @@ fn it_obeys_verbose() {
     let (out, err, mut output) = setup();
 
     let mut context = Context::default();
-    context.sauce_path = mkpath("./tests/execute_it_runs.toml");
+    context.with_sauce_path(mkpath("./tests/execute_it_runs.toml"));
     output.set_quiet(true);
     output.set_verbose(true);
 
