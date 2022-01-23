@@ -1,14 +1,15 @@
-use crate::toml::{ensure_section, write_document};
-use crate::{
-    colors::{BLUE, TABLE_BLUE, TABLE_YELLOW, YELLOW},
-    toml::unwrap_toml_value,
-};
-use anyhow::Result;
-use comfy_table::{Attribute, Cell, ContentArrangement, Row, Table};
-use std::{fmt::Display, io::Write, ops::Deref, path::Path};
-use toml_edit::{Document, Item};
+use std::fmt::Display;
+use std::io::Write;
+use std::ops::Deref;
+use std::path::Path;
 
 use ansi_term::{ANSIString, ANSIStrings};
+use anyhow::Result;
+use comfy_table::{Attribute, Cell, ContentArrangement, Row, Table};
+use toml_edit::{Document, Item};
+
+use crate::colors::{BLUE, TABLE_BLUE, TABLE_YELLOW, YELLOW};
+use crate::toml::{ensure_section, unwrap_toml_value, write_document};
 
 pub struct Output {
     out: Box<dyn Write>,
@@ -87,18 +88,16 @@ impl Output {
         data: Vec<Vec<&str>>,
         preset: Option<&str>,
     ) -> String {
-        let mut table = Table::new();
-        table.set_content_arrangement(ContentArrangement::Dynamic);
-        if let Some(preset) = preset {
-            table.load_preset(preset);
-        } else {
-            table.load_preset("││──╞═╪╡│    ┬┴┌┐└┘");
-        }
-        table.set_header(headers);
-        table.enforce_styling();
+        let preset = preset.unwrap_or("││──╞═╪╡│    ┬┴┌┐└┘");
 
-        let (width, _) = crossterm::terminal::size().unwrap_or((100, 0));
-        table.set_table_width(width);
+        let mut table = Table::new();
+        table
+            .use_stderr()
+            .set_content_arrangement(ContentArrangement::Dynamic)
+            .load_preset(preset)
+            .set_header(headers)
+            .use_stderr()
+            .enforce_styling();
 
         for data_row in data {
             let mut row = Row::new();
