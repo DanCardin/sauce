@@ -1,21 +1,19 @@
+use std::path::{Path, PathBuf};
+
 use ansi_term::ANSIString;
 use anyhow::Result;
 use itertools::Itertools;
 use path_absolutize::Absolutize;
-use std::path::Path;
-use std::path::PathBuf;
 use toml_edit::Item;
 
-use crate::{
-    colors::{BLUE, RED, YELLOW},
-    filter::FilterOptions,
-    output::{ErrorCode, Output},
-    saucefile::Saucefile,
-    settings::Settings,
-    shell::{actions, Shell},
-    target::Target,
-    toml::value_from_string,
-};
+use crate::colors::{BLUE, RED, YELLOW};
+use crate::filter::FilterOptions;
+use crate::output::{ErrorCode, Output};
+use crate::saucefile::Saucefile;
+use crate::settings::Settings;
+use crate::shell::{actions, Shell};
+use crate::target::Target;
+use crate::toml::value_from_string;
 
 #[derive(Debug)]
 pub struct Context<'a> {
@@ -318,9 +316,10 @@ mod tests {
     use super::*;
 
     mod cascade_paths {
+        use pretty_assertions::assert_eq;
+
         use super::super::*;
         use super::*;
-        use pretty_assertions::assert_eq;
 
         fn corpus<'a, P: Into<&'a Path>>(root: P) -> corpus::Corpus {
             let root = root.into();

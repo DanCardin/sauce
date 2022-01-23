@@ -1,12 +1,11 @@
-use std::{
-    cell::RefCell,
-    io::Write,
-    path::{Path, PathBuf},
-    rc::Rc,
-    str,
-};
+use std::cell::RefCell;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::rc::Rc;
+use std::str;
 
-use crate::{output::Output, shell::Shell};
+use crate::output::Output;
+use crate::shell::Shell;
 
 pub fn mkpath(path: &str) -> PathBuf {
     Path::new(path).canonicalize().unwrap()

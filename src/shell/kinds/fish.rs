@@ -52,8 +52,9 @@ mod tests {
     mod edit {
         use std::ffi::OsString;
 
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_edits_path() {
@@ -64,8 +65,9 @@ mod tests {
     }
 
     mod init {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_defaults() {
@@ -86,8 +88,9 @@ mod tests {
     }
 
     mod set_var {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_works() {
@@ -98,8 +101,9 @@ mod tests {
     }
 
     mod set_alias {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_works() {
@@ -110,8 +114,9 @@ mod tests {
     }
 
     mod set_function {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_works() {
@@ -122,8 +127,9 @@ mod tests {
     }
 
     mod unset_var {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_works() {
@@ -134,8 +140,9 @@ mod tests {
     }
 
     mod unset_alias {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_works() {
@@ -146,8 +153,9 @@ mod tests {
     }
 
     mod unset_function {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_works() {

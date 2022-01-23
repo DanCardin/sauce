@@ -1,14 +1,13 @@
 use std::path::Path;
 
-use crate::{
-    colors::{BLUE, RED, YELLOW},
-    filter::{parse_match_option, FilterOptions},
-    output::{ErrorCode, Output},
-    saucefile::Saucefile,
-    settings::Settings,
-    shell::{utilities::get_binary, Shell},
-    target::Target,
-};
+use crate::colors::{BLUE, RED, YELLOW};
+use crate::filter::{parse_match_option, FilterOptions};
+use crate::output::{ErrorCode, Output};
+use crate::saucefile::Saucefile;
+use crate::settings::Settings;
+use crate::shell::utilities::get_binary;
+use crate::shell::Shell;
+use crate::target::Target;
 
 pub fn edit(output: &mut Output, shell: &dyn Shell, path: &Path) {
     let path = path.to_string_lossy();
@@ -216,15 +215,16 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::toml::{ensure_section, value_from_string};
-
-    use crate::test_utils::{setup, TestShell};
     use indoc::indoc;
 
+    use crate::test_utils::{setup, TestShell};
+    use crate::toml::{ensure_section, value_from_string};
+
     mod edit {
+        use pretty_assertions::assert_eq;
+
         use super::super::*;
         use super::*;
-        use pretty_assertions::assert_eq;
 
         #[test]
         fn it_respects_editor_env_var_zsh() {
@@ -241,9 +241,10 @@ mod tests {
     }
 
     mod init {
+        use pretty_assertions::assert_eq;
+
         use super::super::*;
         use super::*;
-        use pretty_assertions::assert_eq;
 
         #[test]
         fn it_defaults() {
@@ -268,9 +269,10 @@ mod tests {
     }
 
     mod clear {
+        use pretty_assertions::assert_eq;
+
         use super::super::*;
         use super::*;
-        use pretty_assertions::assert_eq;
 
         #[test]
         fn it_clears() {
@@ -301,9 +303,10 @@ mod tests {
     }
 
     mod show {
+        use pretty_assertions::assert_eq;
+
         use super::super::*;
         use super::*;
-        use pretty_assertions::assert_eq;
 
         #[test]
         fn it_shows_env_vars() {
@@ -398,9 +401,10 @@ mod tests {
     }
 
     mod execute {
+        use pretty_assertions::assert_eq;
+
         use super::super::*;
         use super::*;
-        use pretty_assertions::assert_eq;
 
         #[test]
         fn it_executes() {

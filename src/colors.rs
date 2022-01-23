@@ -1,4 +1,5 @@
-use ansi_term::{Colour, Colour::RGB};
+use ansi_term::Colour;
+use ansi_term::Colour::RGB;
 use comfy_table::Color;
 
 pub const BLUE: Colour = RGB(70, 130, 180);

@@ -47,7 +47,7 @@ environment variables.
 
 ## Example Workflow
 
-``` bash
+```bash
 # Suppose you've got some directory structure
 ❯ mkdir -p projects/foo
 ❯ cd projects
@@ -119,19 +119,19 @@ Currently supported targets include:
 
 - environment variables
 
-  ``` bash
+  ```bash
   sauce set env FOO=bar
   ```
 
 - aliases
 
-  ``` bash
+  ```bash
   sauce set alias g=git
   ```
 
 - functions
 
-  ``` bash
+  ```bash
   sauce set function add 'echo $(expr $1 + $2)'
   ```
 
@@ -213,7 +213,7 @@ location of the debug build.
 
 An example alias that might be helpful could be:
 
-``` toml
+```toml
 [alias]
 build = 'cargo build --features dev && eval "$(./target/debug/sauce shell init)"'
 ```

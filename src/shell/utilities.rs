@@ -1,6 +1,8 @@
-use crate::shell::kinds::{Bash, Fish, Zsh};
-use std::{collections::VecDeque, env, str::FromStr};
+use std::collections::VecDeque;
+use std::env;
+use std::str::FromStr;
 
+use crate::shell::kinds::{Bash, Fish, Zsh};
 use crate::shell::Shell;
 
 #[derive(Debug)]
@@ -121,8 +123,9 @@ pub fn should_be_colored(strategy: ColorStrategy) -> bool {
 #[cfg(test)]
 mod tests {
     mod escape {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_leaves_vanilla_string_unchanged() {

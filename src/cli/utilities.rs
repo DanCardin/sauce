@@ -1,6 +1,7 @@
-use anyhow::{anyhow, Result};
 use std::io::Read;
 use std::str::FromStr;
+
+use anyhow::{anyhow, Result};
 
 /// Parse a single key-value pair
 pub fn parse_key_val<T: FromStr>(s: &str) -> Result<(T, T)>
@@ -45,8 +46,9 @@ pub fn get_input(values: &[(String, String)]) -> Vec<(String, String)> {
 #[cfg(test)]
 mod tests {
     mod parse_key_val {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_works_with_one_equals() {

@@ -1,14 +1,12 @@
-use crate::{
-    colors::{RED, YELLOW},
-    output::{ErrorCode, Output},
-};
-use std::{
-    fs::OpenOptions,
-    io::{BufReader, BufWriter, Read},
-    str::FromStr,
-};
-use std::{io::Write, path::Path};
+use std::fs::OpenOptions;
+use std::io::{BufReader, BufWriter, Read, Write};
+use std::path::Path;
+use std::str::FromStr;
+
 use toml_edit::{Document, Item, Table, Value};
+
+use crate::colors::{RED, YELLOW};
+use crate::output::{ErrorCode, Output};
 
 pub fn get_document(path: &Path, output: &mut Output) -> Document {
     let content = read_file(path);
@@ -108,10 +106,10 @@ pub fn unwrap_toml_value(value: &Value) -> String {
 #[cfg(test)]
 mod tests {
     mod write_contents {
-        use crate::test_utils::setup;
+        use pretty_assertions::assert_eq;
 
         use super::super::*;
-        use pretty_assertions::assert_eq;
+        use crate::test_utils::setup;
 
         #[test]
         fn it_writes_contents() {

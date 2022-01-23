@@ -1,11 +1,13 @@
-use crate::{filter::FilterOptions, output::Output};
-use crate::{settings::Settings, toml::unwrap_toml_value};
+use std::path::PathBuf;
+
 use indexmap::IndexMap;
 use itertools::iproduct;
-
-use crate::toml::get_document;
-use std::path::PathBuf;
 use toml_edit::{Document, Item, Value};
+
+use crate::filter::FilterOptions;
+use crate::output::Output;
+use crate::settings::Settings;
+use crate::toml::{get_document, unwrap_toml_value};
 
 #[derive(Debug)]
 pub struct Saucefile {
@@ -125,8 +127,9 @@ impl Default for Saucefile {
 #[cfg(test)]
 mod tests {
     mod section {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_includes_values_in_section() {
@@ -270,8 +273,9 @@ mod tests {
     }
 
     mod vars {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_yields_empty_when_empty() {
@@ -282,8 +286,9 @@ mod tests {
     }
 
     mod aliases {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_yields_empty_when_empty() {
@@ -294,8 +299,9 @@ mod tests {
     }
 
     mod functions {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_yields_empty_when_empty() {

@@ -99,8 +99,9 @@ pub fn parse_match_option(value: Option<&str>) -> Vec<MatchOption> {
 #[cfg(test)]
 mod tests {
     mod parse_match_options {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_no_ops_with_none_value() {
@@ -128,8 +129,9 @@ mod tests {
     }
 
     mod filter_match {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_includes_all_values_when_empty() {
@@ -172,8 +174,9 @@ mod tests {
     }
 
     mod filter_exclude {
-        use super::super::*;
         use pretty_assertions::assert_eq;
+
+        use super::super::*;
 
         #[test]
         fn it_includes_all_values_when_empty() {

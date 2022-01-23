@@ -1,6 +1,9 @@
-use crate::shell::{ColorStrategy, ShellName};
+use std::io::Write;
+use std::path::PathBuf;
+
 use clap::Clap;
-use std::{io::Write, path::PathBuf};
+
+use crate::shell::{ColorStrategy, ShellName};
 
 /// Sauce!
 #[derive(Clap, Debug)]

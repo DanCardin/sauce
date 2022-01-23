@@ -1,12 +1,13 @@
-use crate::filter::FilterOptions;
-use crate::shell::{self, Shell};
-use crate::Context;
-use crate::{cli::utilities::get_input, target::Target};
-use crate::{filter::parse_match_option, output::Output};
 use anyhow::Result;
 use etcetera::base_strategy::{BaseStrategy, Xdg};
 
 use super::shape::{CliOptions, KeyValuePair, SetKinds, ShellKinds, ShowKinds, SubCommand};
+use crate::cli::utilities::get_input;
+use crate::filter::{parse_match_option, FilterOptions};
+use crate::output::Output;
+use crate::shell::{self, Shell};
+use crate::target::Target;
+use crate::Context;
 
 pub fn run() -> Result<()> {
     let opts: CliOptions = CliOptions::parse();

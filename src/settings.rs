@@ -1,14 +1,11 @@
-use crate::{
-    colors::{RED, YELLOW},
-    output::ErrorCode,
-};
-use std::{
-    fmt::Display,
-    path::{Path, PathBuf},
-};
+use std::fmt::Display;
+use std::path::{Path, PathBuf};
 
-use crate::{output::Output, toml::get_document};
 use toml_edit::{Document, Item, Table, Value};
+
+use crate::colors::{RED, YELLOW};
+use crate::output::{ErrorCode, Output};
+use crate::toml::get_document;
 
 #[derive(Debug)]
 pub struct RealizedSettings {
@@ -206,9 +203,10 @@ impl Default for Settings {
 #[cfg(test)]
 mod tests {
     mod settings_from_document {
-        use super::super::*;
         use pretty_assertions::assert_eq;
         use toml_edit::Document;
+
+        use super::super::*;
 
         #[test]
         fn it_loads_from_empty_document() {
@@ -234,9 +232,10 @@ mod tests {
     }
 
     mod settings_resolve_precedence {
-        use super::super::*;
         use pretty_assertions::assert_eq;
         use toml_edit::Document;
+
+        use super::super::*;
 
         #[test]
         fn it_defaults_to_default() {
