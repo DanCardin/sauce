@@ -6,7 +6,7 @@ use crate::{
     output::{ErrorCode, Output},
     saucefile::Saucefile,
     settings::Settings,
-    shell::{utilities::get_binary, Shell},
+    shell::Shell,
     target::Target,
 };
 
@@ -22,8 +22,7 @@ pub fn edit(output: &mut Output, shell: &dyn Shell, path: &Path) {
 }
 
 pub fn init(output: &mut Output, shell: &dyn Shell, autoload_hook: bool) {
-    let binary = get_binary();
-    let result = shell.init(&binary, autoload_hook);
+    let result = shell.init("sauce", autoload_hook);
     output.output(result);
 }
 
@@ -31,7 +30,7 @@ pub fn execute_shell_command(output: &mut Output, shell: &dyn Shell, command: &s
     let result = subprocess::Exec::cmd(shell.name())
         .arg("-i")
         .arg("-c")
-        .arg(format!("{}; {}", clap::crate_name!(), command))
+        .arg(format!("sauce; {}", command))
         .stdout(subprocess::Redirection::Merge)
         .join();
 

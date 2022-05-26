@@ -1,5 +1,5 @@
 use crate::shell::kinds::{Bash, Fish, Zsh};
-use std::{collections::VecDeque, env, str::FromStr};
+use std::{collections::VecDeque, str::FromStr};
 
 use crate::shell::Shell;
 
@@ -76,10 +76,6 @@ pub fn unescape_newline(s: &str) -> String {
 pub fn escape(value: &str) -> String {
     let shell_value = snailquote::escape(value).to_string();
     unescape_newline(&shell_value)
-}
-
-pub fn get_binary() -> String {
-    clap::crate_name!().to_string()
 }
 
 pub fn qualify_binary_path(binary: &str) -> String {

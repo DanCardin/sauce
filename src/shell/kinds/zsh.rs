@@ -1,5 +1,6 @@
 use crate::shell::utilities::{escape, qualify_binary_path};
 use crate::shell::Shell;
+use std::fmt::Write;
 
 pub struct Zsh;
 
@@ -16,7 +17,7 @@ impl Shell for Zsh {
         );
 
         if autoload_hook {
-            init.push_str(&format!(include_str!("zsh_init_autoload.zsh"), binary));
+            write!(init, include_str!("zsh_init_autoload.zsh"), binary).ok();
         }
 
         init
@@ -31,7 +32,7 @@ impl Shell for Zsh {
     }
 
     fn set_function(&self, var: &str, value: &str) -> String {
-        format!("function {} {{\n  {}\n}}", var, value.replace("\n", "\n  "))
+        format!("function {} {{\n  {}\n}}", var, value.replace('\n', "\n  "))
     }
 
     fn unset_var(&self, var: &str) -> String {

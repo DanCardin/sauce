@@ -2,7 +2,7 @@ use glob::Pattern;
 
 pub type MatchOption<'a> = (Option<&'a str>, &'a str);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct FilterOptions<'a> {
     pub as_: Option<&'a str>,
 
@@ -10,17 +10,6 @@ pub struct FilterOptions<'a> {
 
     pub filters: &'a [MatchOption<'a>],
     pub filter_exclusions: &'a [MatchOption<'a>],
-}
-
-impl<'a> Default for FilterOptions<'a> {
-    fn default() -> Self {
-        Self {
-            as_: None,
-            globs: &[],
-            filters: &[],
-            filter_exclusions: &[],
-        }
-    }
 }
 
 impl<'a> FilterOptions<'a> {
