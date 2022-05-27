@@ -97,9 +97,6 @@ impl Output {
         table.set_header(headers);
         table.enforce_styling();
 
-        let (width, _) = crossterm::terminal::size().unwrap_or((100, 0));
-        table.set_table_width(width);
-
         for data_row in data {
             let mut row = Row::new();
             for (i, data_cell) in data_row.iter().enumerate() {

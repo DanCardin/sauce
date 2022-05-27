@@ -57,9 +57,7 @@ pub struct MockWriter(Rc<RefCell<Vec<u8>>>);
 
 impl Default for MockWriter {
     fn default() -> Self {
-        Self {
-            0: Rc::new(RefCell::new(Vec::new())),
-        }
+        Self(Rc::new(RefCell::new(Vec::new())))
     }
 }
 

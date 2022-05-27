@@ -10,21 +10,11 @@ use std::{
 use crate::{output::Output, toml::get_document};
 use toml_edit::{Document, Item, Table, Value};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct RealizedSettings {
     pub autoload_hook: bool,
     pub autoload: bool,
     pub clear_ignore: Vec<String>,
-}
-
-impl Default for RealizedSettings {
-    fn default() -> Self {
-        Self {
-            autoload_hook: false,
-            autoload: false,
-            clear_ignore: Vec::new(),
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -158,15 +148,12 @@ impl<'a> Setting<'a> {
     fn notify_invalid<T: Display>(&self, kind: &str, value: Option<T>) -> Option<T> {
         if value.is_none() {
             eprintln!(
-                "{}",
-                format!(
-                    "{} {} {} {}",
-                    RED.bold()
-                        .paint("Settings Error: Failed to interpret value"),
-                    YELLOW.paint(self.name),
-                    RED.bold().paint("value as"),
-                    YELLOW.paint(kind),
-                )
+                "{} {} {} {}",
+                RED.bold()
+                    .paint("Settings Error: Failed to interpret value"),
+                YELLOW.paint(self.name),
+                RED.bold().paint("value as"),
+                YELLOW.paint(kind),
             );
         }
         value
@@ -178,13 +165,10 @@ impl<'a> Setting<'a> {
             Item::Value(value) => Some(value),
             _ => {
                 eprintln!(
-                    "{}",
-                    format!(
-                        "{} {} {}",
-                        RED.bold().paint("Settings Error: Expected"),
-                        YELLOW.paint(self.name),
-                        RED.bold().paint("to be a value, not a table"),
-                    )
+                    "{} {} {}",
+                    RED.bold().paint("Settings Error: Expected"),
+                    YELLOW.paint(self.name),
+                    RED.bold().paint("to be a value, not a table"),
                 );
                 None
             }

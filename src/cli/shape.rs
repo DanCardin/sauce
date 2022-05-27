@@ -1,9 +1,9 @@
 use crate::shell::{ColorStrategy, ShellName};
-use clap::Clap;
+use clap::Parser;
 use std::{io::Write, path::PathBuf};
 
 /// Sauce!
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 #[clap(version, author)]
 pub struct CliOptions {
     /// Determines the shell behavior, this flag should always be set automatically
@@ -75,7 +75,7 @@ impl CliOptions {
     }
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum SubCommand {
     /// Clears the shell of values sauce tracks
     Clear,
@@ -102,7 +102,7 @@ pub enum SubCommand {
     Show(ShowCommand),
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ConfigCommand {
     #[clap(long, short)]
     pub global: bool,
@@ -111,7 +111,7 @@ pub struct ConfigCommand {
     pub values: Vec<(String, String)>,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct MoveCommand {
     /// The destination location to which a `sauce` invocation would point.
     /// That is, not the destination saucefile location.
@@ -124,13 +124,13 @@ pub struct MoveCommand {
     pub copy: bool,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct SetCommand {
     #[clap(subcommand)]
     pub kind: SetKinds,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum SetKinds {
     Env(SetVarKind),
     Alias(SetVarKind),
@@ -138,26 +138,26 @@ pub enum SetKinds {
 }
 
 /// Key-value pairs, delimited by an "=".
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct SetVarKind {
     #[clap(parse(try_from_str = crate::cli::utilities::parse_key_val))]
     pub values: Vec<(String, String)>,
 }
 
 /// Key value pair, supplied as individual arguments
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct KeyValuePair {
     pub key: String,
     pub value: String,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ShellCommand {
     #[clap(subcommand)]
     pub kind: ShellKinds,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum ShellKinds {
     /// The intialization shell hook for getting sauce functionality
     Init,
@@ -166,19 +166,19 @@ pub enum ShellKinds {
     Exec(ExecCommand),
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ExecCommand {
     #[clap()]
     pub command: String,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ShowCommand {
     #[clap(subcommand)]
     pub kind: ShowKinds,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum ShowKinds {
     Env,
     Alias,

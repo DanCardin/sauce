@@ -1,10 +1,22 @@
 # Changelog
 
-### [v0.6.6](https://github.com/DanCardin/sauce/compare/v0.6.5...v0.6.6) (2021-02-21)
+## [Unreleased](https://github.com/DanCardin/sauce/compare/v0.6.6...HEAD) (2022-05-26)
+
+### Features
+
+* Quote shell special characters (and upgrade dependencies). 7bb20e7
+* Use corpus for path logic. da596c3
+
+### Fixes
+
+* Address clippy warnings. 23ed36f
+
+
+### [v0.6.6](https://github.com/DanCardin/sauce/compare/v0.6.5...v0.6.6) (2021-02-22)
 
 #### Features
 
-* Describe the cascaded saucefiles being loaded. 1ffa279
+* Describe the cascaded saucefiles being loaded. ade5a15
 
 
 ### [v0.6.5](https://github.com/DanCardin/sauce/compare/v0.6.4...v0.6.5) (2021-02-15)
