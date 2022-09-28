@@ -21,7 +21,7 @@ pub fn run() -> Result<()> {
         .quiet(opts.quiet)
         .verbose(opts.verbose)
         .color(shell::should_be_colored(opts.color))
-        .only_show(opts.show);
+        .show(opts.show);
 
     let filter_options = FilterOptions {
         globs: &parse_match_option(opts.glob.as_deref()),

@@ -3,7 +3,7 @@ use std::path::Path;
 use crate::{
     colors::{BLUE, RED, YELLOW},
     filter::{parse_match_option, FilterOptions},
-    output::{ErrorCode, Output},
+    output::Output,
     saucefile::Saucefile,
     settings::Settings,
     shell::Shell,
@@ -36,69 +36,6 @@ pub fn execute_shell_command(output: &mut Output, shell: &dyn Shell, command: &s
 
     if let Err(error) = result {
         output.notify(&[RED.bold().paint(error.to_string())]);
-    }
-}
-
-pub fn create_saucefile(output: &mut Output, sauce_path: &Path) {
-    let parent = sauce_path.parent().unwrap();
-    if std::fs::create_dir_all(parent).is_err() {
-        output.notify_error(
-            ErrorCode::WriteError,
-            &[
-                RED.paint("Couldn't create "),
-                YELLOW.paint(parent.to_string_lossy()),
-            ],
-        );
-        return;
-    }
-
-    if sauce_path.is_file() {
-        output.notify_error(
-            ErrorCode::WriteError,
-            &[
-                RED.bold().paint("File already exists at "),
-                YELLOW.paint(sauce_path.to_string_lossy()),
-            ],
-        );
-    } else if std::fs::File::create(&sauce_path).is_err() {
-        output.notify_error(
-            ErrorCode::WriteError,
-            &[
-                RED.bold().paint("Couldn't create "),
-                YELLOW.paint(sauce_path.to_string_lossy()),
-            ],
-        );
-    } else {
-        output.notify(&[
-            BLUE.bold().paint("Created "),
-            YELLOW.paint(sauce_path.to_string_lossy()),
-        ]);
-    }
-}
-
-pub fn move_saucefile(output: &mut Output, source: &Path, destination: &Path, copy: bool) {
-    let result = if copy {
-        std::fs::copy(source, destination).map(|_| ())
-    } else {
-        std::fs::rename(source, destination)
-    };
-
-    if result.is_ok() {
-        let message = &[
-            BLUE.paint("Successfully moved "),
-            YELLOW.paint(source.to_string_lossy()),
-            BLUE.paint(" to "),
-            YELLOW.paint(destination.to_string_lossy()),
-        ];
-        output.notify(message);
-    } else {
-        let message = &[
-            RED.paint("Failed to move "),
-            YELLOW.paint(source.to_string_lossy()),
-            RED.paint(" to "),
-            YELLOW.paint(destination.to_string_lossy()),
-        ];
-        output.notify_error(ErrorCode::WriteError, message);
     }
 }
 
