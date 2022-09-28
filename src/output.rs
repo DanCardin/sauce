@@ -1,6 +1,6 @@
 use crate::toml::{ensure_section, write_document};
 use crate::{
-    colors::{BLUE, TABLE_BLUE, TABLE_YELLOW, YELLOW},
+    colors::{BLUE, RED, TABLE_BLUE, TABLE_YELLOW, YELLOW},
     toml::unwrap_toml_value,
 };
 use anyhow::Result;
@@ -68,9 +68,13 @@ impl Output {
         self
     }
 
-    pub fn only_show(mut self, value: bool) -> Self {
+    pub fn show(mut self, value: bool) -> Self {
         self.show = value;
         self
+    }
+
+    pub fn set_show(&mut self, value: bool) {
+        self.show = value;
     }
 
     fn format(&self, output: impl Display) -> String {
@@ -135,7 +139,7 @@ impl Output {
         result
     }
 
-    pub fn notify(&mut self, message: &[ANSIString]) -> bool {
+    pub fn notify(&mut self, message: &[ANSIString]) -> String {
         let message = if self.color {
             self.format(ANSIStrings(message))
         } else {
@@ -151,15 +155,17 @@ impl Output {
         self.notify_str(&message)
     }
 
-    pub fn notify_str(&mut self, message: &str) -> bool {
-        if !self.quiet {
-            self.err.write_all(message.as_bytes()).is_ok()
+    pub fn notify_str(&mut self, message: &str) -> String {
+        let message_content = message.as_bytes();
+        if self.quiet {
+            String::new()
         } else {
-            true
+            self.err.write_all(message_content).ok();
+            message.to_string()
         }
     }
 
-    pub fn notify_error(&mut self, code: ErrorCode, message: &[ANSIString]) -> bool {
+    pub fn notify_error(&mut self, code: ErrorCode, message: &[ANSIString]) -> String {
         self.code = Some(code);
         self.notify(message)
     }
@@ -200,6 +206,90 @@ impl Output {
 
         if !self.show {
             write_document(file, document, self);
+        }
+    }
+
+    pub fn create_file(&mut self, file: &Path) -> Result<(), String> {
+        if let Some(parent) = file.parent() {
+            let created = if self.show {
+                true
+            } else {
+                std::fs::create_dir_all(parent).is_err()
+            };
+
+            if !created {
+                return Err(self.notify_error(
+                    ErrorCode::WriteError,
+                    &[
+                        RED.paint("Couldn't create "),
+                        YELLOW.paint(parent.to_string_lossy()),
+                    ],
+                ));
+            }
+        }
+
+        if file.is_file() {
+            return Err(self.notify_error(
+                ErrorCode::WriteError,
+                &[
+                    RED.bold().paint("File already exists at "),
+                    YELLOW.paint(file.to_string_lossy()),
+                ],
+            ));
+        }
+
+        let created = if self.show {
+            true
+        } else {
+            std::fs::File::create(file).is_err()
+        };
+
+        if !created {
+            return Err(self.notify_error(
+                ErrorCode::WriteError,
+                &[
+                    RED.bold().paint("Couldn't create "),
+                    YELLOW.paint(file.to_string_lossy()),
+                ],
+            ));
+        }
+
+        self.notify(&[
+            BLUE.bold().paint("Created "),
+            YELLOW.paint(file.to_string_lossy()),
+        ]);
+        Ok(())
+    }
+
+    pub fn move_file(&mut self, source: &Path, dest: &Path, copy: bool) -> Result<(), String> {
+        let moved = if self.show {
+            true
+        } else {
+            let result = if copy {
+                std::fs::copy(source, dest).map(|_| ())
+            } else {
+                std::fs::rename(source, dest)
+            };
+            result.is_ok()
+        };
+
+        if moved {
+            let message = &[
+                BLUE.paint("Moved "),
+                YELLOW.paint(source.to_string_lossy()),
+                BLUE.paint(" to "),
+                YELLOW.paint(dest.to_string_lossy()),
+            ];
+            self.notify(message);
+            Ok(())
+        } else {
+            let message = &[
+                RED.paint("Failed to move "),
+                YELLOW.paint(source.to_string_lossy()),
+                RED.paint(" to "),
+                YELLOW.paint(dest.to_string_lossy()),
+            ];
+            Err(self.notify_error(ErrorCode::WriteError, message))
         }
     }
 }

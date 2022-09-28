@@ -1,7 +1,6 @@
 use ansi_term::ANSIString;
 use anyhow::Result;
 use itertools::Itertools;
-use path_absolutize::Absolutize;
 use std::path::Path;
 use std::path::PathBuf;
 use toml_edit::Item;
@@ -9,7 +8,7 @@ use toml_edit::Item;
 use crate::{
     colors::{BLUE, RED, YELLOW},
     filter::FilterOptions,
-    output::{ErrorCode, Output},
+    output::Output,
     saucefile::Saucefile,
     settings::Settings,
     shell::{actions, Shell},
@@ -84,20 +83,24 @@ impl<'a> Context<'a> {
         self._saucefile.as_mut().unwrap()
     }
 
-    pub fn with_sauce_path(&mut self, sauce_path: PathBuf) {
+    pub fn with_sauce_path(mut self, sauce_path: PathBuf) -> Self {
         self._sauce_path = Some(sauce_path);
+        self
     }
 
-    pub fn with_settings(&mut self, settings: Settings) {
+    pub fn with_settings(mut self, settings: Settings) -> Self {
         self._settings = Some(settings);
+        self
     }
 
-    pub fn with_corpus(&mut self, corpus: corpus::Corpus) {
+    pub fn with_corpus(mut self, corpus: corpus::Corpus) -> Self {
         self.corpus = corpus;
+        self
     }
 
-    pub fn at_path<P: Into<PathBuf>>(&mut self, path: P) {
+    pub fn at_path<P: Into<PathBuf>>(mut self, path: P) -> Self {
         self.path = path.into();
+        self
     }
 
     pub fn load_settings(&mut self, output: &mut Output) {
@@ -129,36 +132,21 @@ impl<'a> Context<'a> {
         actions::execute_shell_command(output, shell_kind, command)
     }
 
-    pub fn create_saucefile(&mut self, output: &mut Output) {
-        actions::create_saucefile(output, &self.corpus.path(self.sauce_path().as_path()));
+    pub fn create_saucefile(&self, output: &mut Output) {
+        output.create_file(&self.sauce_path()).ok();
     }
 
     pub fn move_saucefile(&self, output: &mut Output, destination: &Path, copy: bool) {
-        let source = &self.corpus.path(self.sauce_path().as_path());
-
-        let destination = match destination.absolutize() {
-            Ok(d) => d,
-            Err(_) => {
-                output.notify_error(
-                    ErrorCode::WriteError,
-                    &[RED.paint("Path is not relative to the home directory")],
-                );
-                return;
-            }
-        };
-        if let Ok(relative_path) = destination.strip_prefix(&self.corpus.relative_path) {
-            let dest = self.corpus.path(relative_path);
-            actions::move_saucefile(output, source, &dest, copy);
-        } else {
-            output.notify_error(
-                ErrorCode::WriteError,
-                &[RED.paint("Path is not relative to the home directory")],
-            );
-        }
+        let dest = self.corpus.path(destination);
+        output.move_file(&self.sauce_path(), &dest, copy).ok();
     }
 
     pub fn edit_saucefile(&mut self, shell_kind: &dyn Shell, output: &mut Output) {
-        actions::edit(output, shell_kind, self.sauce_path().as_path());
+        let path = self.sauce_path();
+        if !path.is_file() {
+            self.create_saucefile(output);
+        }
+        actions::edit(output, shell_kind, &path);
     }
 
     pub fn show(&mut self, target: Target, output: &mut Output) {
@@ -338,9 +326,9 @@ mod tests {
         fn test_home() {
             let home = etcetera::home_dir().unwrap();
 
-            let mut context = Context::default();
-            context.with_corpus(corpus(home.join(".local/share").as_path()));
-            context.at_path(&home);
+            let context = Context::default()
+                .with_corpus(corpus(home.join(".local/share").as_path()))
+                .at_path(&home);
 
             let paths: Vec<_> = context.cascade_paths().collect();
 
@@ -352,9 +340,9 @@ mod tests {
         fn test_nested_subdir() {
             let home = etcetera::home_dir().unwrap();
 
-            let mut context = Context::default();
-            context.with_corpus(corpus(home.join(".local/share").as_path()));
-            context.at_path(home.join("meow/meow/kitty"));
+            let context = Context::default()
+                .with_corpus(corpus(home.join(".local/share").as_path()))
+                .at_path(home.join("meow/meow/kitty"));
 
             let paths: Vec<_> = context.cascade_paths().collect();
 
