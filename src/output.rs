@@ -214,7 +214,7 @@ impl Output {
             let created = if self.show {
                 true
             } else {
-                std::fs::create_dir_all(parent).is_err()
+                std::fs::create_dir_all(parent).is_ok()
             };
 
             if !created {
@@ -241,7 +241,7 @@ impl Output {
         let created = if self.show {
             true
         } else {
-            std::fs::File::create(file).is_err()
+            std::fs::File::create(file).is_ok()
         };
 
         if !created {
