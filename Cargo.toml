@@ -1,6 +1,6 @@
 [package]
 name = "sauce"
-version = "0.7.1"
+version = "0.7.2"
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
 edition = "2021"
 description = "A tool for managing directory-specific state."
