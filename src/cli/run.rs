@@ -83,12 +83,14 @@ pub fn match_subcommmand(
             SetKinds::Function(KeyValuePair { key, value }) => {
                 context.set_function(key, value, output)
             }
+            SetKinds::File(KeyValuePair { key, value }) => context.set_file(key, value, output),
         },
         Some(SubCommand::Edit) => context.edit_saucefile(shell_kind, output),
         Some(SubCommand::Show(show)) => match show.kind {
             ShowKinds::Env => context.show(Target::EnvVar, output),
             ShowKinds::Function => context.show(Target::Function, output),
             ShowKinds::Alias => context.show(Target::Alias, output),
+            ShowKinds::File => context.show(Target::File, output),
         },
         Some(SubCommand::Clear) => context.clear(shell_kind, output),
         None => context.execute(shell_kind, autoload, output),

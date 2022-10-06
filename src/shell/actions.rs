@@ -69,6 +69,9 @@ pub fn clear(
         saucefile.functions(&filter_options),
         |k, _| shell.unset_function(k),
     ));
+    output.output(render_items(saucefile.files(&filter_options), |k, _| {
+        shell.unset_file(k)
+    }));
     output.notify(&[BLUE.bold().paint("Cleared your sauce")]);
 }
 
@@ -82,17 +85,20 @@ pub fn show(
         Target::EnvVar => &["Variable", "Value"],
         Target::Alias => &["Alias", "Value"],
         Target::Function => &["Function", "Body"],
+        Target::File => &["File", "Content"],
     };
 
     let pairs = match target {
         Target::EnvVar => saucefile.vars(filter_options),
         Target::Alias => saucefile.aliases(filter_options),
         Target::Function => saucefile.functions(filter_options),
+        Target::File => saucefile.files(filter_options),
     };
     let preset = match target {
         Target::EnvVar => None,
         Target::Alias => None,
         Target::Function => Some("││──╞═╪╡│ │││┬┴┌┐└┘"),
+        Target::File => Some("││──╞═╪╡│ │││┬┴┌┐└┘"),
     };
 
     let cells = pairs
@@ -132,6 +138,9 @@ pub fn execute(
     }));
     output.output(render_items(saucefile.functions(filter_options), |k, v| {
         shell.set_function(k, v)
+    }));
+    output.output(render_items(saucefile.files(filter_options), |k, v| {
+        shell.set_file(k, v)
     }));
     true
 }
