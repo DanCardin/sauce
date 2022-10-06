@@ -110,6 +110,10 @@ impl Saucefile {
     pub fn functions(&self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
         self.section(&["function"], filter_options)
     }
+
+    pub fn files(&self, filter_options: &FilterOptions) -> Vec<(&str, String)> {
+        self.section(&["file"], filter_options)
+    }
 }
 
 impl Default for Saucefile {

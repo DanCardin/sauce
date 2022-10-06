@@ -135,6 +135,7 @@ pub enum SetKinds {
     Env(SetVarKind),
     Alias(SetVarKind),
     Function(KeyValuePair),
+    File(KeyValuePair),
 }
 
 /// Key-value pairs, delimited by an "=".
@@ -183,4 +184,5 @@ pub enum ShowKinds {
     Env,
     Alias,
     Function,
+    File,
 }

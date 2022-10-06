@@ -232,6 +232,13 @@ impl<'a> Context<'a> {
         self.set_values(output, "function", values);
     }
 
+    pub fn set_file(&mut self, name: &str, body: &str, output: &mut Output) {
+        self.load_saucefile(output);
+        let values = vec![(name, value_from_string(body))];
+
+        self.set_values(output, "file", values);
+    }
+
     fn set_values<I, T>(&mut self, output: &mut Output, section: &str, values: I)
     where
         I: IntoIterator<Item = (T, Item)>,
