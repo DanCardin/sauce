@@ -9,15 +9,20 @@ impl Shell for Fish {
         "fish"
     }
 
-    fn init(&self, binary: &str, autoload_hook: bool) -> String {
+    fn init(&self, binary: &str, autoload_hook: bool, autoload_args: &str) -> String {
         let mut init = format!(
             include_str!("fish_init.fish"),
             binary,
-            qualify_binary_path(binary)
+            qualify_binary_path(binary),
         );
 
         if autoload_hook {
-            write!(init, include_str!("fish_init_autoload.fish"), binary).ok();
+            write!(
+                init,
+                include_str!("fish_init_autoload.fish"),
+                binary, autoload_args,
+            )
+            .ok();
         }
 
         init
@@ -71,7 +76,7 @@ mod tests {
         #[test]
         fn it_defaults() {
             let shell = Fish {};
-            let output = shell.init("foo", false);
+            let output = shell.init("foo", false, "");
             assert_eq!(
                 output,
                 "function foo\n  command foo --shell fish $argv | source\nend\n"
@@ -81,7 +86,7 @@ mod tests {
         #[test]
         fn it_includes_autoload() {
             let shell = Fish {};
-            let output = shell.init("foo", true);
+            let output = shell.init("foo", true, "");
             assert_eq!(output.contains("--autoload"), true);
         }
     }

@@ -20,7 +20,7 @@ startup and changing directory.
 
 Note this does not actually enable the autoload feature!
 
-*Handy Tip!* I set this to `true` at the **global** level, because
+_Handy Tip!_ I set this to `true` at the **global** level, because
 that’s what will always end up loaded at every shell start.
 
 ### `autoload`
@@ -30,9 +30,16 @@ Defaults to `false`. When `true` **actually** enables autoload behavior
 “Autoload behavior” causes `sauce` to be invoked upon both new shells as
 well as when changing directory.
 
-*Handy Tip!* I set this to `true` at the **local** level, enabling me to
+_Handy Tip!_ I set this to `true` at the **local** level, enabling me to
 opt in to autoload in whatever directories I like, which I find I more
 frequently prefer.
+
+### `autoload-args`
+
+Defaults to `""`. By default, autoloaded invocations are effectively an
+argument-less call to `sauce`. When set, this causes the `sauce shell init`
+command to emit the `autoload-args`'s value into the shell wrapper around
+sauce such that autoloaded invocations also include those arguments.
 
 ### `clear-ignore`
 
@@ -46,7 +53,7 @@ When a list item matches a given target’s key (i.e. env var name, alias
 name, function name) it will then be **excluded** from from the set of
 values returned for whatever subcommand you’re invoking.
 
-*Handy Tip!* I sometimes use this to set values like `$PATH` in
+_Handy Tip!_ I sometimes use this to set values like `$PATH` in
 directories that i’m sure I’ll only `sauce` once, while not potentially
 breaking my shell by unsetting `$PATH`.
 

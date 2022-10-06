@@ -9,15 +9,20 @@ impl Shell for Zsh {
         "zsh"
     }
 
-    fn init(&self, binary: &str, autoload_hook: bool) -> String {
+    fn init(&self, binary: &str, autoload_hook: bool, autoload_args: &str) -> String {
         let mut init = format!(
             include_str!("zsh_init.zsh"),
             binary,
-            qualify_binary_path(binary)
+            qualify_binary_path(binary),
         );
 
         if autoload_hook {
-            write!(init, include_str!("zsh_init_autoload.zsh"), binary).ok();
+            write!(
+                init,
+                include_str!("zsh_init_autoload.zsh"),
+                binary, autoload_args,
+            )
+            .ok();
         }
 
         init
@@ -71,7 +76,7 @@ mod tests {
         #[test]
         fn it_defaults() {
             let shell = Zsh {};
-            let output = shell.init("foo", false);
+            let output = shell.init("foo", false, "");
             assert_eq!(
                 output,
                 "function foo {\n  eval \"$(command foo --shell zsh \"$@\")\"\n}\n"
@@ -81,7 +86,7 @@ mod tests {
         #[test]
         fn it_includes_autoload() {
             let shell = Zsh {};
-            let output = shell.init("foo", true);
+            let output = shell.init("foo", true, "");
             assert_eq!(output.contains("--autoload"), true);
         }
     }

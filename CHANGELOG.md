@@ -1,6 +1,26 @@
 # Changelog
 
-### [v0.7.1](https://github.com/DanCardin/sauce/compare/v0.7.0...v0.7.1) (2022-09-28)
+## [v0.8.0](https://github.com/DanCardin/sauce/compare/v0.7.2...v0.8.0) (2022-10-06)
+
+### Features
+
+* Add autoload-args config option.
+  ([052778b](https://github.com/DanCardin/sauce/commit/052778b8c6d8fc559f8b3a29378cc52f461ca211))
+* Add the ability to configure default arguments supplied to the sauce command.
+  ([49a617d](https://github.com/DanCardin/sauce/commit/49a617d8f386b2ac877c1a796b69b377b9629b1c))
+* Add -t/--target option to only sauce a specific target.
+  ([89ef948](https://github.com/DanCardin/sauce/commit/89ef948998b662d8cef663d17d350e85080dead9))
+* Add file target.
+  ([b539b5d](https://github.com/DanCardin/sauce/commit/b539b5d2c08ea1dfef7c48b25708a95331ba35b1))
+
+### [v0.7.2](https://github.com/DanCardin/sauce/compare/v0.7.1...v0.7.2) (2022-10-04)
+
+#### Fixes
+
+* Inverted error handling logic for file creation.
+  ([4fdee76](https://github.com/DanCardin/sauce/commit/4fdee76cadbff7b3933c575cb4120b847fc0afeb))
+
+### [v0.7.1](https://github.com/DanCardin/sauce/compare/v0.7.0...v0.7.1) (2022-09-29)
 
 #### Fixes
 

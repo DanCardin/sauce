@@ -19,9 +19,9 @@ impl Shell for TestShell {
         "test"
     }
 
-    fn init(&self, binary: &str, autoload_hook: bool) -> String {
+    fn init(&self, binary: &str, autoload_hook: bool, autoload_args: &str) -> String {
         if autoload_hook {
-            format!("{} {}", binary, "--autoload")
+            format!("{} {}{}", binary, "--autoload", autoload_args)
         } else {
             binary.to_string()
         }
