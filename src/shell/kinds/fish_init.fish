@@ -1,3 +1,3 @@
 function {0}
-  command {1} --shell fish {2} $argv | source
+  command {1} --shell fish $argv | source
 end

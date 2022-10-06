@@ -21,8 +21,13 @@ pub fn edit(output: &mut Output, shell: &dyn Shell, path: &Path) {
     }
 }
 
-pub fn init(output: &mut Output, shell: &dyn Shell, autoload_hook: bool, default_args: &str) {
-    let result = shell.init("sauce", autoload_hook, default_args);
+pub fn init(output: &mut Output, shell: &dyn Shell, autoload_hook: bool, autoload_args: &str) {
+    let autoload_args = if autoload_args.len() == 0 {
+        autoload_args.to_string()
+    } else {
+        String::from(" ") + autoload_args
+    };
+    let result = shell.init("sauce", autoload_hook, &autoload_args);
     output.output(result);
 }
 
@@ -194,7 +199,7 @@ mod tests {
         fn it_defaults() {
             let (out, err, mut output) = setup();
             let shell = TestShell {};
-            init(&mut output, &shell, false);
+            init(&mut output, &shell, false, "");
 
             assert_eq!(out.value(), "sauce\n");
             assert_eq!(err.value(), "");
@@ -205,7 +210,7 @@ mod tests {
             let (out, err, mut output) = setup();
             let shell = TestShell {};
 
-            init(&mut output, &shell, true);
+            init(&mut output, &shell, true, "");
 
             assert_eq!(out.value(), "sauce --autoload\n");
             assert_eq!(err.value(), "");

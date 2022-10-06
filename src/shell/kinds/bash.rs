@@ -9,16 +9,20 @@ impl Shell for Bash {
         "bash"
     }
 
-    fn init(&self, binary: &str, autoload_hook: bool, default_args: &str) -> String {
+    fn init(&self, binary: &str, autoload_hook: bool, autoload_args: &str) -> String {
         let mut init = format!(
             include_str!("bash_init.sh"),
             binary,
             qualify_binary_path(binary),
-            default_args,
         );
 
         if autoload_hook {
-            write!(init, include_str!("bash_init_autoload.sh"), binary).ok();
+            write!(
+                init,
+                include_str!("bash_init_autoload.sh"),
+                binary, autoload_args,
+            )
+            .ok();
         }
 
         init
@@ -72,7 +76,7 @@ mod tests {
         #[test]
         fn it_defaults() {
             let shell = Bash {};
-            let output = shell.init("foo", false);
+            let output = shell.init("foo", false, "");
             assert_eq!(
                 output,
                 "function foo {\n  eval \"$(command foo --shell bash \"$@\")\"\n}\n"
@@ -82,7 +86,7 @@ mod tests {
         #[test]
         fn it_autoloads() {
             let shell = Bash {};
-            let output = shell.init("foo", true);
+            let output = shell.init("foo", true, "");
             assert_eq!(output.contains("--autoload"), true);
         }
     }
