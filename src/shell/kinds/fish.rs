@@ -9,11 +9,12 @@ impl Shell for Fish {
         "fish"
     }
 
-    fn init(&self, binary: &str, autoload_hook: bool) -> String {
+    fn init(&self, binary: &str, autoload_hook: bool, default_args: &str) -> String {
         let mut init = format!(
             include_str!("fish_init.fish"),
             binary,
-            qualify_binary_path(binary)
+            qualify_binary_path(binary),
+            default_args,
         );
 
         if autoload_hook {

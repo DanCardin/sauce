@@ -120,7 +120,8 @@ impl<'a> Context<'a> {
     pub fn init_shell(&mut self, shell_kind: &dyn Shell, output: &mut Output) {
         self.load_settings(output);
         let autoload_hook = self.settings().autoload_hook.unwrap_or(false);
-        actions::init(output, shell_kind, autoload_hook)
+        let default_args = self.settings().default_args.as_deref().unwrap_or("");
+        actions::init(output, shell_kind, autoload_hook, default_args)
     }
 
     pub fn execute_shell_command(

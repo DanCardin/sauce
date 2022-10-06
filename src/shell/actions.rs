@@ -21,8 +21,8 @@ pub fn edit(output: &mut Output, shell: &dyn Shell, path: &Path) {
     }
 }
 
-pub fn init(output: &mut Output, shell: &dyn Shell, autoload_hook: bool) {
-    let result = shell.init("sauce", autoload_hook);
+pub fn init(output: &mut Output, shell: &dyn Shell, autoload_hook: bool, default_args: &str) {
+    let result = shell.init("sauce", autoload_hook, default_args);
     output.output(result);
 }
 

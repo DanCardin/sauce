@@ -14,6 +14,7 @@ use toml_edit::{Document, Item, Table, Value};
 pub struct RealizedSettings {
     pub autoload_hook: bool,
     pub autoload: bool,
+    pub default_args: String,
     pub clear_ignore: Vec<String>,
 }
 
@@ -22,6 +23,7 @@ pub struct Settings {
     pub file: PathBuf,
     pub autoload_hook: Option<bool>,
     pub autoload: Option<bool>,
+    pub default_args: Option<String>,
     pub clear_ignore: Option<Vec<String>>,
 }
 
@@ -37,12 +39,14 @@ impl Settings {
 
         let autoload_hook = Setting::new(general, "autoload-hook").as_bool();
         let autoload = Setting::new(general, "autoload").as_bool();
+        let default_args = Setting::new(general, "default-args").as_string();
         let clear_ignore = Setting::new(general, "clear-ignore").as_vec_of_string();
 
         Self {
             file,
             autoload_hook,
             autoload,
+            default_args,
             clear_ignore,
         }
     }
@@ -58,6 +62,9 @@ impl Settings {
             }
             if let Some(v) = settings.autoload {
                 default.autoload = v;
+            }
+            if let Some(v) = &settings.default_args {
+                default.default_args = v.to_string();
             }
             if let Some(v) = &settings.clear_ignore {
                 default.clear_ignore = v.to_vec();
@@ -76,7 +83,7 @@ impl Settings {
         let values = pairs
             .iter()
             .filter_map(|(setting, value)| match setting.as_ref() {
-                "autoload" | "autoload-hook" | "clear-ignore" => {
+                "autoload" | "autoload-hook" | "autoload-args" | "clear-ignore" => {
                     if let Ok(parsed_value) = value.as_ref().parse::<Value>() {
                         Some((setting.as_ref(), toml_edit::value(parsed_value)))
                     } else {
@@ -132,6 +139,15 @@ impl<'a> Setting<'a> {
         }
     }
 
+    pub fn as_string(&self) -> Option<String> {
+        if let Some(value) = self.get_value() {
+            let value = value.as_str().map(|s| s.to_string());
+            self.notify_invalid("string", value)
+        } else {
+            None
+        }
+    }
+
     pub fn as_vec_of_string(&self) -> Option<Vec<String>> {
         if let Some(value) = self.get_value() {
             self.notify_invalid("list of string", value.as_array())
@@ -182,6 +198,7 @@ impl Default for Settings {
             file: PathBuf::new(),
             autoload_hook: None,
             autoload: None,
+            default_args: None,
             clear_ignore: None,
         }
     }
