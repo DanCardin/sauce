@@ -67,6 +67,11 @@ impl Saucefile {
     }
 
     fn section(&self, sections: &[&str], filter_options: &FilterOptions) -> Vec<(&str, String)> {
+        if let Some(target) = filter_options.target {
+            if !sections.contains(&target) {
+                return Vec::new();
+            }
+        }
         let tag = filter_options.as_.unwrap_or("default");
 
         iproduct!(self.documents(), sections)
