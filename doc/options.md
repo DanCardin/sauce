@@ -14,16 +14,16 @@ Any key-value pair can be tagged with, you might call “namespaces”.
 
 Consider an env var definition
 
-``` toml
+```toml
 AWS_PROFILE = {default = "projectname-dev", uat = "projectname-uat", prod = "projectname-prod"}
 ```
 
 Given `sauce`, you will get the “default” namespace
-(i.e. AWS\_PROFILE=projectname-dev) for this value, as well as all other
+(i.e. AWS_PROFILE=projectname-dev) for this value, as well as all other
 unnamespaced values.
 
 Given `sauce --as prod`, you will get the “prod” namespace
-(i.e. AWS\_PROFILE=projectname-prod) for this value, as well as all
+(i.e. AWS_PROFILE=projectname-prod) for this value, as well as all
 other unnamespaced values.
 
 ## `sauce --glob glob` and `sauce --filter filter`
@@ -38,6 +38,11 @@ You can also specify globs/filters specific to a particular target,
 which might be important given that there can be overlap between
 targets. Targets are separated from their search term by `:`,
 i.e. `--glob env:database*,function:work-*`.
+
+## `sauce --target target` / `sauce -t target`
+
+This can be thought of as a simpler way of performing `--glob target:*`,
+by automatically only performing the sauce command for the given target.
 
 ## `sauce --show`
 

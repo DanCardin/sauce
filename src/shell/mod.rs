@@ -16,7 +16,7 @@ pub trait Shell {
         editor.map(|e| format!("{} '{}'", e.to_string_lossy(), path))
     }
 
-    fn init(&self, binary: &str, autoload: bool) -> String;
+    fn init(&self, binary: &str, autoload: bool, autoload_args: &str) -> String;
     fn set_var(&self, var: &str, value: &str) -> String;
     fn unset_var(&self, var: &str) -> String;
 

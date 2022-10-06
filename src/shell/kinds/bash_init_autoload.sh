@@ -23,7 +23,7 @@ _chpwd_hook() {{
 PROMPT_COMMAND="_chpwd_hook${{PROMPT_COMMAND:+;$PROMPT_COMMAND}}"
 
 _{0}_autoload() {{
-  {0} --autoload
+  {0}{1} --autoload
 }}
 
 # append the command into CHPWD_COMMAND
