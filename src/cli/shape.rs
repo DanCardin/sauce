@@ -52,6 +52,11 @@ pub struct CliOptions {
     #[clap(short, long)]
     pub glob: Option<String>,
 
+    /// Only use values for a specific target. Essentially this can be thought of
+    /// as a shortcut for `-g '<target>:*`.
+    #[clap(short, long)]
+    pub target: Option<String>,
+
     /// Filters the set of values to load, literally. By default filters apply to all
     /// targets, but also can use the form "<target>:<filter>" to be more specific.
     #[clap(short, long)]

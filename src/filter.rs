@@ -4,6 +4,7 @@ pub type MatchOption<'a> = (Option<&'a str>, &'a str);
 
 #[derive(Debug, Clone, Default)]
 pub struct FilterOptions<'a> {
+    pub target: Option<&'a str>,
     pub as_: Option<&'a str>,
 
     pub globs: &'a [MatchOption<'a>],
