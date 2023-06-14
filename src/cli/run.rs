@@ -69,7 +69,7 @@ pub fn match_subcommmand(
             match cmd.kind {
                 ShellKinds::Init => context.init_shell(shell_kind, output),
                 ShellKinds::Exec(command) => {
-                    context.execute_shell_command(shell_kind, &*command.command, output)
+                    context.execute_shell_command(shell_kind, &command.command, output)
                 }
             };
         }

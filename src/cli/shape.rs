@@ -4,65 +4,65 @@ use std::{io::Write, path::PathBuf};
 
 /// Sauce!
 #[derive(Parser, Debug)]
-#[clap(version, author)]
+#[command(version, author)]
 pub struct CliOptions {
     /// Determines the shell behavior, this flag should always be set automatically
     /// by the shell hook. Valid options are: zsh, fish, bash
-    #[clap(long)]
+    #[arg(long)]
     pub shell: ShellName,
 
     /// Supplied during autoload sequence. Not generally useful to end-users.
-    #[clap(long)]
+    #[arg(long)]
     pub autoload: bool,
 
     /// For typical commands such as `sauce` and `sauce clear` this outputs the exact
     /// shell output that would have executed. For mutating commands like `sauce config`
     /// and `sauce set`, the change is printed but not saved.
-    #[clap(long)]
+    #[arg(long)]
     pub show: bool,
 
     /// Valid options: always, never, auto. Auto (default) will attempt to autodetect
     /// whether it should output color based on the existence of a tty.
-    #[clap(long, default_value = "auto")]
+    #[arg(long, default_value = "auto")]
     pub color: ColorStrategy,
 
     /// Enables verbose output. This causes all stdout to be mirrored to stderr.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub verbose: bool,
 
     /// Disables normal messaging output after a command is executed.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub quiet: bool,
 
     /// The path which should be sauce'd. Defaults to the current directory.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub path: Option<PathBuf>,
 
     /// Sets a specific saucefile to load, overriding the default lookup mechanisms and
     /// cascading behavior
-    #[clap(long)]
+    #[arg(long)]
     pub file: Option<PathBuf>,
 
     /// Runs the given command "as" the given "as" namespace.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub r#as: Option<Vec<String>>,
 
     /// Filters the set of values to load, allowing globs. By default filters apply to
     /// all targets, but also can use the form "<target>:<glob>" to be more specific.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub glob: Option<String>,
 
     /// Only use values for a specific target. Essentially this can be thought of
     /// as a shortcut for `-g '<target>:*`.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub target: Option<String>,
 
     /// Filters the set of values to load, literally. By default filters apply to all
     /// targets, but also can use the form "<target>:<filter>" to be more specific.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub filter: Option<String>,
 
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub subcmd: Option<SubCommand>,
 }
 
@@ -109,10 +109,10 @@ pub enum SubCommand {
 
 #[derive(Parser, Debug)]
 pub struct ConfigCommand {
-    #[clap(long, short)]
+    #[arg(long, short)]
     pub global: bool,
 
-    #[clap(parse(try_from_str = crate::cli::utilities::parse_key_val))]
+    #[arg(value_parser = crate::cli::utilities::parse_key_val::<String>)]
     pub values: Vec<(String, String)>,
 }
 
@@ -120,18 +120,18 @@ pub struct ConfigCommand {
 pub struct MoveCommand {
     /// The destination location to which a `sauce` invocation would point.
     /// That is, not the destination saucefile location.
-    #[clap()]
+    #[arg()]
     pub destination: PathBuf,
 
     /// Instead of removing the files at the source location, leave the original
     /// file untouched.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub copy: bool,
 }
 
 #[derive(Parser, Debug)]
 pub struct SetCommand {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub kind: SetKinds,
 }
 
@@ -146,7 +146,7 @@ pub enum SetKinds {
 /// Key-value pairs, delimited by an "=".
 #[derive(Parser, Debug)]
 pub struct SetVarKind {
-    #[clap(parse(try_from_str = crate::cli::utilities::parse_key_val))]
+    #[arg(value_parser = crate::cli::utilities::parse_key_val::<String>)]
     pub values: Vec<(String, String)>,
 }
 
@@ -159,7 +159,7 @@ pub struct KeyValuePair {
 
 #[derive(Parser, Debug)]
 pub struct ShellCommand {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub kind: ShellKinds,
 }
 
@@ -174,13 +174,13 @@ pub enum ShellKinds {
 
 #[derive(Parser, Debug)]
 pub struct ExecCommand {
-    #[clap()]
+    #[arg()]
     pub command: String,
 }
 
 #[derive(Parser, Debug)]
 pub struct ShowCommand {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub kind: ShowKinds,
 }
 

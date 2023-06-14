@@ -1,6 +1,6 @@
 [package]
 name = "sauce"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
 edition = "2021"
 description = "A tool for managing directory-specific state."
@@ -37,11 +37,15 @@ toml_edit = "0.2.0"
 once_cell = "1.8.0"
 
 [dependencies.clap]
-version = "3.1.18"
+version = "4.3.3"
 features = [
-    "suggestions",
     "color",
     "derive",
+    "error-context",
+    "help",
+    "suggestions",
+    "usage",
+    "wrap_help",
 ]
 
 [dependencies.indexmap]
