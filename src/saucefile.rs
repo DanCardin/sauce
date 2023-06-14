@@ -2,6 +2,7 @@ use crate::{filter::FilterOptions, output::Output};
 use crate::{settings::Settings, toml::unwrap_toml_value};
 use indexmap::IndexMap;
 use itertools::iproduct;
+use std::iter::once;
 
 use crate::toml::get_document;
 use std::path::PathBuf;
@@ -72,7 +73,15 @@ impl Saucefile {
                 return Vec::new();
             }
         }
-        let tag = filter_options.as_.unwrap_or("default");
+        // let default = ["default".to_string()];
+
+        let tags: Vec<String> = filter_options
+            .as_
+            .clone()
+            .unwrap_or(vec![])
+            .into_iter()
+            .chain(once("default".to_string()))
+            .collect();
 
         iproduct!(self.documents(), sections)
             .filter_map(|(document, section)| document[section].as_table())
@@ -82,22 +91,25 @@ impl Saucefile {
                     && filter_options.filter_match(sections, key)
                     && filter_options.filter_exclude(sections, key)
             })
-            .map(|(key, item)| {
-                let var = match item {
-                    Item::Value(value) => match value {
-                        Value::InlineTable(table) => match table.get(tag) {
-                            Some(value) => unwrap_toml_value(value),
-                            _ => "".to_string(),
+            .filter_map(|(key, item)| {
+                for tag in tags.iter() {
+                    let var = match item {
+                        Item::Value(value) => match value {
+                            Value::InlineTable(table) => match table.get(tag) {
+                                Some(value) => unwrap_toml_value(value),
+                                _ => continue,
+                            },
+                            _ => unwrap_toml_value(value),
                         },
-                        _ => unwrap_toml_value(value),
-                    },
-                    Item::Table(table) => match &table[tag] {
-                        Item::Value(value) => unwrap_toml_value(value),
-                        _ => "".to_string(),
-                    },
-                    _ => "".to_string(),
-                };
-                (key, var)
+                        Item::Table(table) => match &table[tag] {
+                            Item::Value(value) => unwrap_toml_value(value),
+                            _ => continue,
+                        },
+                        _ => continue,
+                    };
+                    return Some((key, var));
+                }
+                None
             })
             .collect::<IndexMap<&str, String>>()
             .into_iter()
@@ -194,11 +206,7 @@ mod tests {
             let result = sauce.section(&["foo"], &FilterOptions::default());
             assert_eq!(
                 result,
-                vec![
-                    ("bar", "1".to_string()),
-                    ("bees", "2".to_string()),
-                    ("boops", "".to_string()),
-                ]
+                vec![("bar", "1".to_string()), ("bees", "2".to_string()),]
             );
         }
 
@@ -217,16 +225,44 @@ mod tests {
             let result = sauce.section(
                 &["foo"],
                 &FilterOptions {
-                    as_: Some("wow"),
+                    as_: Some(vec!["wow".to_string()]),
+                    ..Default::default()
+                },
+            );
+            assert_eq!(
+                result,
+                vec![("bar", "1".to_string()), ("bees", "2".to_string()),]
+            );
+        }
+
+        #[test]
+        fn it_selects_multiple_tags() {
+            let mut sauce = Saucefile::default();
+
+            let toml = r#"
+            [foo]
+            one = 1
+            two = {default = 2}
+            three = {three = 3}
+            four = {four = 4}
+            notfive = {ohno = 4}
+            "#;
+            sauce.document = toml.parse::<Document>().expect("invalid doc");
+
+            let result = sauce.section(
+                &["foo"],
+                &FilterOptions {
+                    as_: Some(vec!["three".to_string(), "four".to_string()]),
                     ..Default::default()
                 },
             );
             assert_eq!(
                 result,
                 vec![
-                    ("bar", "1".to_string()),
-                    ("bees", "2".to_string()),
-                    ("boops", "".to_string()),
+                    ("one", "1".to_string()),
+                    ("two", "2".to_string()),
+                    ("three", "3".to_string()),
+                    ("four", "4".to_string()),
                 ]
             );
         }

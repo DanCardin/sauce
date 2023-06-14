@@ -3,7 +3,7 @@ use std::{collections::VecDeque, str::FromStr};
 
 use crate::shell::Shell;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ShellName {
     Zsh,
     Fish,
@@ -26,7 +26,7 @@ impl FromStr for ShellName {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ColorStrategy {
     Always,
     Never,
