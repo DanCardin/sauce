@@ -16,7 +16,7 @@ pub fn get_document(path: &Path, output: &mut Output) -> Document {
 }
 
 pub fn write_document(file: &Path, document: &Document, output: &mut Output) {
-    let handle = OpenOptions::new().write(true).open(&file);
+    let handle = OpenOptions::new().write(true).open(file);
     write_contents(handle, file, document, output);
 }
 

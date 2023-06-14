@@ -45,7 +45,7 @@ pub struct CliOptions {
 
     /// Runs the given command "as" the given "as" namespace.
     #[clap(short, long)]
-    pub r#as: Option<String>,
+    pub r#as: Option<Vec<String>>,
 
     /// Filters the set of values to load, allowing globs. By default filters apply to
     /// all targets, but also can use the form "<target>:<glob>" to be more specific.

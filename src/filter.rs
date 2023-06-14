@@ -5,7 +5,7 @@ pub type MatchOption<'a> = (Option<&'a str>, &'a str);
 #[derive(Debug, Clone, Default)]
 pub struct FilterOptions<'a> {
     pub target: Option<&'a str>,
-    pub as_: Option<&'a str>,
+    pub as_: Option<Vec<String>>,
 
     pub globs: &'a [MatchOption<'a>],
 
@@ -42,8 +42,8 @@ impl<'a> FilterOptions<'a> {
     }
 }
 
-fn check_matches<'a, F>(
-    globs: &[MatchOption<'a>],
+fn check_matches<F>(
+    globs: &[MatchOption],
     kinds: &[&str],
     value: &str,
     matcher: F,

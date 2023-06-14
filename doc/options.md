@@ -15,7 +15,7 @@ Any key-value pair can be tagged with, you might call “namespaces”.
 Consider an env var definition
 
 ```toml
-AWS_PROFILE = {default = "projectname-dev", uat = "projectname-uat", prod = "projectname-prod"}
+AWS_PROFILE = {default = "dev", uat = "uat", prod = "prod"}
 ```
 
 Given `sauce`, you will get the “default” namespace
@@ -25,6 +25,15 @@ unnamespaced values.
 Given `sauce --as prod`, you will get the “prod” namespace
 (i.e. AWS_PROFILE=projectname-prod) for this value, as well as all
 other unnamespaced values.
+
+As of v0.9.0, you can supply multiple `--as` arguments, and they will be used to
+choose the first matching value (falling back to "default" if none match).
+
+Per the above example, `sauce --as foo` would produce "dev" and
+`sauce --as uat --as prod` would produce "uat".
+
+If there was no "default" option specified above, then any "namespaced" keys without
+a matching value would be unchanged relative to the current environment.
 
 ## `sauce --glob glob` and `sauce --filter filter`
 

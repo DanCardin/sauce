@@ -26,7 +26,7 @@ pub fn run() -> Result<()> {
     let filter_options = FilterOptions {
         globs: &parse_match_option(opts.glob.as_deref()),
         filters: &parse_match_option(opts.filter.as_deref()),
-        as_: opts.r#as.as_deref(),
+        as_: opts.r#as,
         target: opts.target.as_deref(),
         filter_exclusions: &[],
     };
