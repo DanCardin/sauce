@@ -67,7 +67,7 @@ where
     }) == match_returns
 }
 
-pub fn parse_match_option(value: Option<&str>) -> Vec<MatchOption> {
+pub fn parse_match_option(value: Option<&str>) -> Vec<MatchOption<'_>> {
     if let Some(value) = value {
         value
             .split(',')

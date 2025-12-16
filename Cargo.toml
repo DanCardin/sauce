@@ -1,6 +1,6 @@
 [package]
 name = "sauce"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
 edition = "2021"
 description = "A tool for managing directory-specific state."
@@ -8,11 +8,7 @@ documentation = "https://github.com/DanCardin/sauce"
 homepage = "https://github.com/DanCardin/sauce"
 repository = "https://github.com/DanCardin/sauce"
 readme = "README.md"
-keywords = [
-    "source",
-    "shell",
-    "direnv",
-]
+keywords = ["source", "shell", "direnv"]
 categories = ["command-line-utilities"]
 license = "Apache-2.0"
 
@@ -26,7 +22,7 @@ ansi_term = "0.12"
 anyhow = "1.0.35"
 atty = "0.2.14"
 comfy-table = "5.0.0"
-corpus = {version = "0.2.1", features = ["xdg", "home"]}
+corpus = { version = "0.2.1", features = ["xdg", "home"] }
 etcetera = "0.3.2"
 glob = "0.3.0"
 itertools = "0.10.0"
@@ -38,15 +34,7 @@ once_cell = "1.8.0"
 
 [dependencies.clap]
 version = "4.3.3"
-features = [
-    "color",
-    "derive",
-    "error-context",
-    "help",
-    "suggestions",
-    "usage",
-    "wrap_help",
-]
+features = ["color", "derive", "error-context", "help", "suggestions", "usage", "wrap_help"]
 
 [dependencies.indexmap]
 version = "1.6.1"
