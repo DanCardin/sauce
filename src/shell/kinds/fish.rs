@@ -29,7 +29,7 @@ impl Shell for Fish {
     }
 
     fn set_var(&self, var: &str, value: &str) -> String {
-        format!("set -x {} {}", var, escape(value))
+        format!("set -gx {} {}", var, escape(value))
     }
 
     fn set_alias(&self, var: &str, value: &str) -> String {
@@ -79,7 +79,7 @@ mod tests {
             let output = shell.init("foo", false, "");
             assert_eq!(
                 output,
-                "function foo\n  command foo --shell fish $argv | source\nend\n"
+                "function foo\n  eval (command foo --shell fish $argv)\nend\n"
             );
         }
 
@@ -99,7 +99,7 @@ mod tests {
         fn it_works() {
             let shell = Fish {};
             let output = shell.set_var("foo", "bar");
-            assert_eq!(output, "set -x foo bar");
+            assert_eq!(output, "set -gx foo bar");
         }
     }
 
